@@ -3,7 +3,6 @@
   "version": "1.0.0",
   "description": "Backend for ZippyGo Transfers handling payments and notifications",
   "main": "server.js",
-  "type": "module",
   "scripts": {
     "start": "node server.js",
     "build": "echo 'No build step required'"
