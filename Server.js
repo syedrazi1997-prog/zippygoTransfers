@@ -1,6 +1,4 @@
 import express from 'express';
-import fs from 'fs';
-import path from 'path';
 const app = express();
 // ADMIN ENDPOINT: Update or add a new destination price row
 app.post('/api/admin/update-price', (req, res) => {
