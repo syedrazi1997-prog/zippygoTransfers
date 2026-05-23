@@ -1,1 +1,6 @@
-
+{
+  "sharm el sheikh": { "shuttle": 22.00, "private": 75.00 },
+  "hurghada": { "shuttle": 28.50, "private": 90.00 },
+  "cairo airport": { "shuttle": 40.00, "private": 130.00 },
+  "london heathrow": { "shuttle": 45.00, "private": 140.00 }
+}
