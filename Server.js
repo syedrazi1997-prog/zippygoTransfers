@@ -24,7 +24,7 @@ const mailTransport = nodemailer.createTransport({
     secure: false, // true for port 465, false for other ports
     auth: {
         user: 'ac4bc1001@smtp-brevo.com', 
-        pass: 'YOUR_BREVO_SMTP_PASSWORD' // 🌟 PASTE YOUR MASTER BREVO SECRET SMTP PASSWORD STRING HERE
+        pass: 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 // 🌟 PASTE YOUR MASTER BREVO SECRET SMTP PASSWORD STRING HERE
     }
 });
 
