@@ -667,5 +667,77 @@ async function fetchConfigurations() {
 // Run the setup function
 fetchConfigurations();
     </script>
+    <section class="max-w-4xl mx-auto px-4 py-12 mt-12 bg-slate-900 text-white rounded-3xl shadow-xl">
+    <div class="border-b border-slate-800 pb-4 mb-6">
+        <h3 class="text-xl font-black text-emerald-400">🛠️ Zippygo Price Management Portal</h3>
+        <p class="text-xs text-slate-400">Add new hotels/destinations or adjust existing active rates instantly.</p>
+    </div>
+
+    <form id="adminPriceForm" class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+        <div>
+            <label class="block text-xs font-bold text-slate-400 mb-2">Destination / Hotel Name</label>
+            <input type="text" id="adminDest" required placeholder="e.g., Marriott Resort" class="w-full p-3 bg-slate-800 border border-slate-700 rounded-xl text-xs text-white focus:outline-none focus:border-emerald-500">
+        </div>
+        <div>
+            <label class="block text-xs font-bold text-slate-400 mb-2">Base Shuttle Price (GBP)</label>
+            <input type="number" step="0.01" id="adminShuttle" required placeholder="25.00" class="w-full p-3 bg-slate-800 border border-slate-700 rounded-xl text-xs text-white focus:outline-none focus:border-emerald-500">
+        </div>
+        <div>
+            <label class="block text-xs font-bold text-slate-400 mb-2">Base Private Price (GBP)</label>
+            <input type="number" step="0.01" id="adminPrivate" required placeholder="80.00" class="w-full p-3 bg-slate-800 border border-slate-700 rounded-xl text-xs text-white focus:outline-none focus:border-emerald-500">
+        </div>
+        <div>
+            <label class="block text-xs font-bold text-slate-400 mb-2">Admin Security Key</label>
+            <input type="password" id="adminPass" required placeholder="••••••••" class="w-full p-3 bg-slate-800 border border-slate-700 rounded-xl text-xs text-white focus:outline-none focus:border-emerald-500">
+        </div>
+        <div class="md:col-span-4 mt-2">
+            <button type="submit" class="w-full bg-emerald-500 hover:bg-emerald-600 text-slate-900 font-bold py-3 rounded-xl text-xs uppercase tracking-wider transition">
+                Apply & Push Live Rates →
+            </button>
+        </div>
+    </form>
+    <div id="adminResponseMsg" class="mt-4 text-xs font-bold hidden text-center p-3 rounded-xl"></div>
+</section>
+
+<script>
+    // Admin Form Logic Execution Pipeline
+    document.getElementById('adminPriceForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const msgTarget = document.getElementById('adminResponseMsg');
+        msgTarget.className = "mt-4 text-xs font-bold p-3 rounded-xl text-center bg-slate-800 text-slate-300";
+        msgTarget.textContent = "Updating global routing indexes...";
+        msgTarget.classList.remove('hidden');
+
+        const payload = {
+            destination: document.getElementById('adminDest').value,
+            shuttle: document.getElementById('adminShuttle').value,
+            private: document.getElementById('adminPrivate').value,
+            password: document.getElementById('adminPass').value
+        };
+
+        try {
+            const res = await fetch('https://zippygotransfers.onrender.com/api/admin/update-price', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            
+            const data = await res.json();
+            
+            if (data.success) {
+                msgTarget.className = "mt-4 text-xs font-bold p-3 rounded-xl text-center bg-emerald-500/20 text-emerald-400";
+                msgTarget.textContent = data.message;
+                document.getElementById('adminPriceForm').reset();
+            } else {
+                msgTarget.className = "mt-4 text-xs font-bold p-3 rounded-xl text-center bg-rose-500/20 text-rose-400";
+                msgTarget.textContent = "Error: " + data.message;
+            }
+        } catch (err) {
+            msgTarget.className = "mt-4 text-xs font-bold p-3 rounded-xl text-center bg-rose-500/20 text-rose-400";
+            msgTarget.textContent = "Failed to connect to the backend server.";
+        }
+    });
+</script>
 </body>
 </html>
