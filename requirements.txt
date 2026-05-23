@@ -1,1 +1,4 @@
-
+flask
+playwright
+pandas
+gunicorn
