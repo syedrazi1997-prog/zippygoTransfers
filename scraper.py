@@ -1,92 +1,38 @@
 import asyncio
-from playwright.async_loop import Error
+from flask import Flask, jsonify
 from playwright.async_api import async_playwright
-import pandas as pd
+import os
 
-async def automate_suntransfers_search():
+app = Flask(__name__)
+
+async def run_scraper():
     async with async_playwright() as p:
-        # Launch browser (headless=False lets you see the automation happen)
-        browser = await p.chromium.launch(headless=False)
-        context = await browser.new_context(viewport={"width": 1280, "height": 800})
+        # CRITICAL: Must be headless=True for Render cloud servers
+        browser = await p.chromium.launch(headless=True)
+        context = await browser.new_context()
         page = await context.new_page()
         
-        print("Opening Suntransfers...")
+        print("Navigating to Suntransfers...")
         await page.goto("https://www.suntransfers.com/", wait_until="networkidle")
         
-        # 1. Handle cookie banner if it appears (common on European booking sites)
-        try:
-            # Adjust the selector if the button text is different (e.g., "Accept All", "Agree")
-            await page.click("button:has-text('Accept')", timeout=5000)
-            print("Cookie banner accepted.")
-        except Error:
-            print("No cookie banner detected or auto-dismissed.")
-
-        # 2. Input Arrival Airport
-        print("Entering arrival airport...")
-        airport_input = page.locator("input[placeholder*='Arrival airport']")
-        await airport_input.click()
-        await airport_input.fill("Malaga")
-        # Wait for dropdown autocomplete options to appear and select the first one
-        await page.wait_for_selector(".autocomplete-results, [role='listbox']")
-        await page.keyboard.press("ArrowDown")
-        await page.keyboard.press("Enter")
-
-        # 3. Input Destination ("Going to")
-        print("Entering destination...")
-        destination_input = page.locator("input[placeholder*='Going to']")
-        await destination_input.click()
-        await destination_input.fill("Marbella")
-        # Wait for autocomplete dropdown and select
-        await page.wait_for_selector(".autocomplete-results, [role='listbox']")
-        await page.keyboard.press("ArrowDown")
-        await page.keyboard.press("Enter")
-
-        # 4. Select Date & Time (Optional adjustment)
-        # Note: Suntransfers auto-fills a default upcoming date. 
-        # To change it, you typically click the wrapper and select a day from the matrix grid.
-        print("Using default/selected flight arrival times...")
-
-        # 5. Click Search Button
-        print("Clicking Search...")
-        # Locates the main search submission button
-        search_button = page.locator("button:has-text('Search'), input[type='submit']")
-        await search_button.click()
+        # ... (Your booking form filling logic goes here) ...
         
-        # 6. Wait for the live Results Page to load
-        print("Waiting for quote results...")
-        await page.wait_for_url("**/search**", timeout=30000)
-        await page.wait_for_load_state("networkidle")
+        # Example dummy data structure to return over the web
+        results = [
+            {"Vehicle Type": "Private Transfer", "Price": "7.31€"},
+            {"Vehicle Type": "Minivan", "Price": "10.42€"}
+        ]
         
-        # 7. Scrape the Live Transfer Options and Prices
-        print("Scraping quote choices...")
-        vehicles = []
-        
-        # Locate the container elements holding vehicle tiers (adjust selectors based on results page DOM)
-        transfer_options = await page.locator(".vehicle-card, .transfer-option, .result-item").all()
-        
-        for option in transfer_options:
-            try:
-                type_element = await option.locator(".vehicle-name, h3, .type").first.text_content()
-                price_element = await option.locator(".price, .amount, .total-price").first.text_content()
-                
-                vehicles.append({
-                    "Vehicle Type": type_element.strip(),
-                    "Price": price_element.strip()
-                })
-            except Exception:
-                continue
-                
-        # 8. Output and save the retrieved rates
-        if vehicles:
-            df = pd.DataFrame(vehicles)
-            print("\n--- Available Live Transfer Quotes ---")
-            print(df)
-            df.to_csv("live_transfers_quotes.csv", index=False)
-            print("\nSaved to 'live_transfers_quotes.csv'")
-        else:
-            print("Could not locate quote elements. You may need to inspect the live results page structure to update class selectors.")
-            
         await browser.close()
+        return results
 
-# Run the automation script
-asyncio.run(automate_suntransfers_search())
+@app.route('/scrape', methods=['GET'])
+def trigger_scrape():
+    # Runs the async Playwright function inside the synchronous Flask route
+    data = asyncio.run(run_scraper())
+    return jsonify({"status": "success", "data": data})
+
+if __name__ == '__main__':
+    # Render assigns a dynamic port, we must bind to it
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host='0.0.0.0', port=port)
