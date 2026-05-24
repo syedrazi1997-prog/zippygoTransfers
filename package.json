@@ -1,5 +1,5 @@
 {
-  "name": "gotransfers-backend",
+  "name": "zippygotransfers-backend",
   "version": "1.0.0",
   "type": "module",
   "description": "Backend for ZippyGo Transfers handling payments and notifications",
