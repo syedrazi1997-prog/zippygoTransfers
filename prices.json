@@ -4,3 +4,8 @@
   "cairo airport": { "shuttle": 40.00, "private": 130.00 },
   "london heathrow": { "shuttle": 45.00, "private": 140.00 }
 }
+{
+  "amount": 419980, 
+  "currency": "INR",
+  "receipt": "receipt#1"
+}
