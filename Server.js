@@ -32,15 +32,21 @@ const mailTransport = nodemailer.createTransport({
 app.post('/api/search-transfers', (req, res) => {
     try {
         const { airport, destination, tripType } = req.body;
+        if (!destination) {
+            return res.status(400).json({ success: false, message: "Missing destination payload." });
+        }
+
         const searchDest = destination.toLowerCase();
-        
         let baseShuttlePrice = 25.00; 
         let basePrivatePrice = 80.00; 
 
-        const filePath = path.resolve('./prices.json');
+        // Clean relative lookups compatible across hosted cloud layers
+        const filePath = path.resolve('prices.json');
+        
         if (fs.existsSync(filePath)) {
-            const rawData = fs.readFileSync(filePath);
+            const rawData = fs.readFileSync(filePath, 'utf8');
             const priceMatrix = JSON.parse(rawData);
+            
             const matchedKey = Object.keys(priceMatrix).find(key => searchDest.includes(key));
             if (matchedKey) {
                 baseShuttlePrice = priceMatrix[matchedKey].shuttle;
@@ -73,12 +79,13 @@ app.post('/api/search-transfers', (req, res) => {
                 description: "⏱️ Meet & Greet at arrivals gate • Flight tracking synchronization • Complimentary bottled water."
             }
         ];
+        
         res.json({ success: true, deals: combinedDeals });
     } catch (error) {
-        res.status(500).json({ success: false, message: "Error acquiring configurations." });
+        console.error("Search runtime fault:", error);
+        res.status(500).json({ success: false, message: "Internal server data exception." });
     }
 });
-
 // SECURE RAZORPAY TRANSACTION SESSION INITIATOR
 app.post('/api/create-razorpay-order', async (req, res) => {
     try {
