@@ -394,7 +394,7 @@
             const cleanDest = destIn.value.split(',')[0].trim();
             heading.textContent = tripType === 'return' ? 'Available Return Transfer Options' : 'Available One Way Transfer Options';
 
-            fetch('https://go-transfers-com.onrender.com/api/search-transfers', {
+            fetch('https://zippygotransfers.onrender.com/api/search-transfers', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
