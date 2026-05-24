@@ -393,32 +393,33 @@
             const cleanAir = airIn.value.split(',')[0].trim();
             const cleanDest = destIn.value.split(',')[0].trim();
             heading.textContent = tripType === 'return' ? 'Available Return Transfer Options' : 'Available One Way Transfer Options';
-
-           fetch('https://zippygotransfers.onrender.com/api/search-transfers', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    airport: cleanAir,
-                    destination: cleanDest,
-                    date: document.getElementById('arrivalDate').value,
-                    time: document.getElementById('arrivalTime').value,
-                    passengers: document.getElementById('passengerSelect').value,
-                    tripType: tripType
-                })
-            })
-            .then(res => res.json())
-            .then(data => {
-                target.innerHTML = '';
-
-                if (data.success && data.deals.length > 0) {
-                    data.deals.forEach(deal => {
-                        const convertedPrice = (parseFloat(deal.priceGbp) * activeExchangeRate).toFixed(2);
-                        
-                        let routeLegsLayout = `<div class="bg-slate-50 p-3 rounded-xl border text-sm text-slate-600"><p class="font-bold text-xs text-slate-400 uppercase">🛫 Transit Route</p><p class="mt-0.5 font-medium text-slate-800">${cleanAir} ➔ ${cleanDest}</p></div>`;
-                        if (tripType === 'return') {
-                            routeLegsLayout = `<div class="grid grid-cols-1 md:grid-cols-2 gap-3 bg-slate-50 p-3 rounded-xl border text-sm text-slate-600"><div><p class="font-bold text-xs text-slate-400 uppercase">🛫 Outbound Leg</p><p class="mt-0.5 font-medium text-slate-800">${cleanAir} ➔ ${cleanDest}</p></div><div><p class="font-bold text-xs text-slate-400 uppercase">🛬 Return Leg</p><p class="mt-0.5 font-medium text-slate-800">${cleanDest} ➔ ${cleanAir}</p></div></div>`;
-                        }
-
+            
+// Send the destination parameters cleanly to your backend
+fetch('https://zippygotransfers.onrender.com/api/search-transfers', {
+    method: 'POST',
+    headers: {
+        'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+        airport: document.getElementById('airportFrom').value,       // Extracts text cleanly
+        destination: document.getElementById('destinationTo').value, // Extracts text cleanly
+        tripType: document.querySelector('input[name="tripType"]:checked').value
+    })
+})
+.then(res => res.json())
+.then(data => {
+    if (data.success && data.deals) {
+        // Pass the backend deals directly to your visual UI builder
+        displayTransferDeals(data.deals); 
+    } else {
+        showSearchError("No available routes found for this destination.");
+    }
+})
+.catch(err => {
+    console.error("Network interface error:", err);
+    showSearchError("Failed to connect to the pricing matrix.");
+});
+           
                         const card = document.createElement('div');
                         card.className = "bg-white rounded-xl border p-6 flex flex-col md:flex-row items-stretch justify-between shadow-md hover:border-emerald-500 transition gap-4 text-left";
                         card.innerHTML = `
