@@ -539,7 +539,7 @@
 localStorage.setItem(bookingRef.toUpperCase(), JSON.stringify(orderRecord));
 
 // NEW: Fire the automatic verification email webhook to the backend server
-fetch('https://https://zippygotransfers.onrender.com//api/send-confirmation-email', {
+fetch('https://zippygotransfers.onrender.com//api/send-confirmation-email', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(orderRecord)
