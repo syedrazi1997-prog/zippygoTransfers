@@ -13,10 +13,10 @@ app.use(express.json());
 
 const GLOBAL_MARGIN = 0.15;
 
-// Initialize Razorpay with your credentials
+// Initialize Razorpay with Fallbacks
 const razorpay = new Razorpay({
-  key_id: 'rzp_test_SrbMdYkhgSZhGZ', 
-  key_secret: 'Og111ZSrIdsfkSS67ZgQissX' 
+  key_id: process.env.RAZORPAY_KEY_ID || 'rzp_test_SrbMdYkhgSZhGZ', 
+  key_secret: process.env.RAZORPAY_KEY_SECRET || 'Og111ZSrIdsfkSS67ZgQissX' 
 });
 
 // 🔑 REGISTERED BREVO MAIL RELAY CONFIGURATION
@@ -25,9 +25,14 @@ const mailTransport = nodemailer.createTransport({
   port: 587,
   secure: false, 
   auth: {
-    user: 'ac4bc1001@smtp-brevo.com',
-    pass: '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'
+    user: process.env.BREVO_USER || 'ac4bc1001@smtp-brevo.com',
+    pass: process.env.BREVO_PASS || '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'
   }
+});
+
+// HEALTH CHECK ROUTE (Required for Render to monitor app status)
+app.get('/', (req, res) => {
+  res.status(200).send("Zippygo Backend Running Perfectly.");
 });
 
 // AUTOMATED EMAIL RECEIPT PROCESSING SYSTEM
@@ -53,7 +58,7 @@ app.post('/api/send-confirmation-email', async (req, res) => {
     `;
 
     const mailOptions = {
-      from: '"Zippygo Transfers" <bookings@zippygotransfers.com>', // Must be your verified Brevo sender domain
+      from: '"Zippygo Transfers" <bookings@zippygotransfers.com>', 
       to: order.email,
       subject: `Booking Confirmed: ${order.id} - Zippygo`,
       html: emailLayout
@@ -84,10 +89,8 @@ app.post('/api/search-transfers', (req, res) => {
       return res.status(400).json({ success: false, message: "Missing destination payload." });
     } 
 
-    // Clean up input for seamless comparison (remove spaces, punctuation, lowercase it)
     const searchDest = destination.trim().toLowerCase().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,"");
     
-    // Default fallback base rates if no exact match is found
     let baseShuttlePrice = 25.00;
     let basePrivatePrice = 80.00; 
     let matchFound = false;
@@ -97,7 +100,6 @@ app.post('/api/search-transfers', (req, res) => {
       const rawData = fs.readFileSync(filePath, 'utf8');
       const priceMatrix = JSON.parse(rawData);
       
-      // Smart fuzzy matching: Check if any part of the keys or destinations intersect
       const matchedKey = Object.keys(priceMatrix).find(key => {
         const cleanKey = key.toLowerCase().trim();
         return searchDest.includes(cleanKey) || cleanKey.includes(searchDest);
@@ -107,7 +109,6 @@ app.post('/api/search-transfers', (req, res) => {
         baseShuttlePrice = parseFloat(priceMatrix[matchedKey].shuttle) || baseShuttlePrice;
         basePrivatePrice = parseFloat(priceMatrix[matchedKey].private) || basePrivatePrice;
         matchFound = true;
-        console.log(`Matched key found: ${matchedKey}`);
       }
     } 
 
@@ -116,7 +117,6 @@ app.post('/api/search-transfers', (req, res) => {
     const finalShuttleGbp = (baseShuttlePrice * marginMultiplier * tripMultiplier).toFixed(2);
     const finalPrivateGbp = (basePrivatePrice * marginMultiplier * tripMultiplier).toFixed(2);
 
-    // Always compile deals, using standard fallback rates if matching failed
     const combinedDeals = [
       {
         id: "ZP-SHUTTLE-" + Math.random().toString(36).substr(2, 4).toUpperCase(),
@@ -132,19 +132,17 @@ app.post('/api/search-transfers', (req, res) => {
       }
     ];
 
-    // CRITICAL: Always respond with success: true and the options array
     return res.status(200).json({ 
       success: true, 
       options: combinedDeals,
-      message: matchFound ? "Exact match located." : "Using generalized regional transfer rates."
+      message: matchFound ? "Exact match located." : "Using generalized regional transfer rates." 
     });
-
   } catch (error) {
     console.error("Search system error:", error);
     return res.status(500).json({ success: false, error: "Internal search configurations fault." });
   }
 });
 
-// App listener configured strictly to run on port 3000
-const PORT = 10000;
+// CRITICAL FIX: Dynamically binding port for Render with local fallback to 3000
+const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Server executing seamlessly on port ${PORT}`));
