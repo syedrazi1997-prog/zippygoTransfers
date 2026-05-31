@@ -102,8 +102,9 @@ app.post('/api/search-transfers', (req, res) => {
       
       const matchedKey = Object.keys(priceMatrix).find(key => {
         const cleanKey = key.toLowerCase().trim();
-        return searchDest.includes(cleanKey) || cleanKey.includes(searchDest);
-      });
+        if (searchDest.includes(cleanKey) || cleanKey.includes(searchDest)) {
+    return true;
+  }
       
       if (matchedKey) {
         baseShuttlePrice = parseFloat(priceMatrix[matchedKey].shuttle) || baseShuttlePrice;
