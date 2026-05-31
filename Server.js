@@ -111,7 +111,6 @@ app.post('/api/search-transfers', (req, res) => {
         basePrivatePrice = parseFloat(priceMatrix[matchedKey].private) || basePrivatePrice;
         matchFound = true;
       }
-    } 
 
     const marginMultiplier = 1 + GLOBAL_MARGIN;
     const tripMultiplier = tripType === 'return' ? 2 : 1;
