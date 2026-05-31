@@ -93,9 +93,9 @@ app.post('/api/send-confirmation-email', async (req, res) => {
 app.post('/api/search-transfers', async (req, res) => {
   try {
     const { airport, destination, tripType } = req.body;
-    if (!destination) {
-      return res.status(400).json({ success: false, message: "Missing destination payload." });
-    }
+if (!airport && !destination) {
+  return res.status(400).json({ success: false, message: "Please provide either an arrival airport or dropoff destination." });
+}
 
    // Combine both inputs into a single string to ensure we catch the keyword wherever the user typed it
     const searchCombined = `${airport || ''} ${destination || ''}`.trim().toLowerCase().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, "");
