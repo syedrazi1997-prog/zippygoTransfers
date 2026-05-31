@@ -16,6 +16,15 @@ const GLOBAL_MARGIN = 0.15;
 
 // CONNECT TO MONGOOSE DATABASE
 // This uses the MONGO_URI environment variable you configured in Render
+// Define the Schema matching your MongoDB document structure
+const priceSchema = new mongoose.Schema({
+  destinationKey: { type: String, required: true, lowercase: true, trim: true },
+  shuttle: { type: String, required: true },
+  private: { type: String, required: true }
+});
+
+// Create the model. It will look for a collection named "prices" in your database
+const Price = mongoose.model('Price', priceSchema);
 if (process.env.MONGO_URI) {
   mongoose.connect(process.env.MONGO_URI)
     .then(() => console.log("MongoDB Database connected successfully!"))
@@ -80,7 +89,8 @@ app.post('/api/send-confirmation-email', async (req, res) => {
 });
 
 // SEARCH ENDPOINT: Pulls prices dynamically matching destination keys
-app.post('/api/search-transfers', (req, res) => {
+// Change this line to be async so we can await database results
+app.post('/api/search-transfers', async (req, res) => {
   try {
     const { airport, destination, tripType } = req.body;
     if (!destination) {
@@ -92,59 +102,55 @@ app.post('/api/search-transfers', (req, res) => {
     let basePrivatePrice = 80.00;
     let matchFound = false;
 
-    const filePath = path.resolve('prices.json');
+    // ─── NEW MONGODB FETCH BLOCK ────────────────────────────────────────
+    // Fetch all active price rules from your MongoDB collections
+    const priceRecords = await Price.find({});
 
-    if (fs.existsSync(filePath)) {
-      const rawData = fs.readFileSync(filePath, 'utf8');
-      const priceMatrix = JSON.parse(rawData);
+    // Scan the database records to see if the user's input matches a key
+    const matchedRecord = priceRecords.find(record => {
+      const cleanKey = record.destinationKey.toLowerCase().trim();
+      return searchDest.includes(cleanKey) || cleanKey.includes(searchDest);
+    });
 
-      // FIX: Finding matching key and properly closing the .find() array loop
-      const matchedKey = Object.keys(priceMatrix).find(key => {
-        const cleanKey = key.toLowerCase().trim();
-        return searchDest.includes(cleanKey) || cleanKey.includes(searchDest);
-      }); // <-- Closed properly here
-
-      if (matchedKey) {
-        baseShuttlePrice = parseFloat(priceMatrix[matchedKey].shuttle) || baseShuttlePrice;
-        basePrivatePrice = parseFloat(priceMatrix[matchedKey].private) || basePrivatePrice;
-        matchFound = true;
-      }
-
-      const marginMultiplier = 1 + GLOBAL_MARGIN;
-      const tripMultiplier = tripType === 'return' ? 2 : 1;
-
-      const finalShuttleGbp = (baseShuttlePrice * marginMultiplier * tripMultiplier).toFixed(2);
-      const finalPrivateGbp = (basePrivatePrice * marginMultiplier * tripMultiplier).toFixed(2);
-
-      const combinedDeals = [
-        {
-          id: "ZP-SHUTTLE-" + Math.random().toString(36).substr(2, 4).toUpperCase(),
-          vehicle: tripType === 'return' ? 'Shared Shuttle Transit (Return)' : 'Shared Shuttle Transit (One Way)',
-          priceGbp: finalShuttleGbp,
-          isEstimated: !matchFound
-        },
-        {
-          id: "ZP-PRIVATE-" + Math.random().toString(36).substr(2, 4).toUpperCase(),
-          vehicle: tripType === 'return' ? 'Private Executive Micro-Bus (Return)' : 'Private Executive Micro-Bus (One Way)',
-          priceGbp: finalPrivateGbp,
-          isEstimated: !matchFound
-        }
-      ];
-
-      return res.status(200).json({
-        success: true,
-        options: combinedDeals,
-        message: matchFound ? "Exact match located." : "Using generalized regional transfer rates."
-      });
-    } else {
-      return res.status(404).json({ success: false, error: "Prices data file could not be found." });
+    if (matchedRecord) {
+      baseShuttlePrice = parseFloat(matchedRecord.shuttle) || baseShuttlePrice;
+      basePrivatePrice = parseFloat(matchedRecord.private) || basePrivatePrice;
+      matchFound = true;
     }
+    // ───────────────────────────────────────────────────────────────────
+
+    const marginMultiplier = 1 + GLOBAL_MARGIN;
+    const tripMultiplier = tripType === 'return' ? 2 : 1;
+
+    const finalShuttleGbp = (baseShuttlePrice * marginMultiplier * tripMultiplier).toFixed(2);
+    const finalPrivateGbp = (basePrivatePrice * marginMultiplier * tripMultiplier).toFixed(2);
+
+    const combinedDeals = [
+      {
+        id: "ZP-SHUTTLE-" + Math.random().toString(36).substr(2, 4).toUpperCase(),
+        vehicle: tripType === 'return' ? 'Shared Shuttle Transit (Return)' : 'Shared Shuttle Transit (One Way)',
+        priceGbp: finalShuttleGbp,
+        isEstimated: !matchFound
+      },
+      {
+        id: "ZP-PRIVATE-" + Math.random().toString(36).substr(2, 4).toUpperCase(),
+        vehicle: tripType === 'return' ? 'Private Executive Micro-Bus (Return)' : 'Private Executive Micro-Bus (One Way)',
+        priceGbp: finalPrivateGbp,
+        isEstimated: !matchFound
+      }
+    ];
+
+    return res.status(200).json({
+      success: true,
+      options: combinedDeals,
+      message: matchFound ? "Exact match located from database." : "Using generalized regional transfer rates."
+    });
+
   } catch (error) {
-    console.error("Search system error:", error);
+    console.error("Database search system error:", error);
     return res.status(500).json({ success: false, error: "Internal search configurations fault." });
   }
 });
-
 // CRITICAL FIX: Dynamically binding port for Render with local fallback to 3000
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Server executing seamlessly on port ${PORT}`));
