@@ -1,10 +1,10 @@
 import express from 'express';
-import cors from 'cors';
+import cors from 'cors'; //
 import nodemailer from 'nodemailer';
 import Razorpay from 'razorpay';
 import fs from 'fs';
 import path from 'path';
-import mongoose from 'mongoose'; // Added to support your database connection
+import mongoose from 'mongoose';
 
 const app = express();
 
