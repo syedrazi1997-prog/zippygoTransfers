@@ -372,7 +372,8 @@
             fetch('https://zippygotransfersbackend.onrender.com/api/search-transfers', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
+                body: JSON.stringify(searchData)
+                    {
                     airport: document.getElementById('airportLookupIn').value,
                     destination: document.getElementById('destinationLookupIn').value,
                     tripType: tripType
