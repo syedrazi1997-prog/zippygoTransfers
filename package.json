@@ -1,7 +1,7 @@
 {
   "name": "zippygotransfersbackend",
   "version": "1.0.0",
-  "type": "ES module",
+  "type": "module",
   "description": "Backend for ZippyGo Transfers handling payments and notifications",
   "main": "Server.js",
   "scripts": {
