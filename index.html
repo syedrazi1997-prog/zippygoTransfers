@@ -351,71 +351,89 @@
         searchBtn.addEventListener('click', renderCatalogOptions);
 
         // Core Matrix Extraction & Option Visual Generator
-        function renderCatalogOptions() {
-            const target = document.getElementById('resultsInjectTarget');
-            const section = document.getElementById('searchResultsSection');
-            const heading = document.getElementById('resultsHeaderTitle');
-            const tripType = document.querySelector('input[name="tripType"]:checked').value;
+function renderCatalogOptions() {
+  const target = document.getElementById('resultsInjectTarget');
+  const section = document.getElementById('searchResultsSection');
+  const heading = document.getElementById('resultsHeaderTitle');
+  const tripType = document.querySelector('input[name="tripType"]:checked').value;
 
-            if (!airIn.value || !destIn.value) {
-                alert("Please fill out both an arrival airport and dropoff destination.");
-                return;
-            }
+  if (!airIn.value || !destIn.value) {
+    alert("Please fill out both an arrival airport and dropoff destination.");
+    return;
+  }
 
-            target.innerHTML = '<div class="text-center py-6 text-slate-400 font-medium animate-pulse">Aggregating live rates from global networks...</div>';
-            section.classList.remove('hidden');
+  target.innerHTML = '<div class="text-center py-6 text-slate-400 font-medium animate-pulse">Aggregating live rates from global networks...</div>';
+  section.classList.remove('hidden');
 
-            const cleanAir = airIn.value.split(',')[0].trim();
-            const cleanDest = destIn.value.split(',')[0].trim();
-            heading.textContent = tripType === 'return' ? 'Available Return Transfer Options' : 'Available One Way Transfer Options';
+  const cleanAir = airIn.value.split(',')[0].trim();
+  const cleanDest = destIn.value.split(',')[0].trim();
+  heading.textContent = tripType === 'return' ? 'Available Return Transfer Options' : 'Available One Way Transfer Options';
 
-            fetch('https://zippygotransfersbackend.onrender.com/api/search-transfers', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(searchData)
-                    {
-                    airport: document.getElementById('airportLookupIn').value,
-                    destination: document.getElementById('destinationLookupIn').value,
-                    tripType: tripType
-                })
-            })
-            .then(res => res.json())
-            .then(data => {
-                target.innerHTML = '';
-                if (data.success && data.deals) {
-                    data.deals.forEach(deal => {
-                        const convertedPrice = (parseFloat(deal.priceGbp) * activeExchangeRate).toFixed(2);
-                        
-                        const routeLegsLayout = tripType === 'return' 
-                            ? `<div class="space-y-1 text-xs font-bold text-slate-500">
-                                 <p class="flex items-center text-emerald-600">🛫 Outbound: ${cleanAir} &rarr; ${cleanDest}</p>
-                                 <p class="flex items-center text-blue-600">🛬 Return Leg: ${cleanDest} &rarr; ${cleanAir}</p>
-                               </div>`
-                            : `<div class="text-xs font-bold text-emerald-600">🛫 One-Way Route: ${cleanAir} &rarr; ${cleanDest}</div>`;
+  // Fixed the syntax error in the body payload below
+  fetch('https://zippygotransfersbackend.onrender.com/api/search-transfers', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      airport: document.getElementById('airportLookupIn').value,
+      destination: document.getElementById('destinationLookupIn').value,
+      tripType: tripType
+    })
+  })
+  .then(res => res.json())
+  .then(data => {
+    target.innerHTML = '';
+    if (data.success && data.options) { // Fixed data property key name to match Server.js
+      data.options.forEach(deal => {
+        const convertedPrice = (parseFloat(deal.priceGbp) * activeExchangeRate).toFixed(2);
+        const routeLegsLayout = tripType === 'return' ? 
+          `<div class="space-y-1 text-xs font-bold text-slate-500">
+            <p class="flex items-center text-emerald-600">🛫 Outbound: ${cleanAir} &rarr; ${cleanDest}</p>
+            <p class="flex items-center text-blue-600">🛬 Return Leg: ${cleanDest} &rarr; ${cleanAir}</p>
+          </div>` : 
+          `<div class="text-xs font-bold text-emerald-600">🛫 One-Way Route: ${cleanAir} &rarr; ${cleanDest}</div>`;
 
-                        const card = document.createElement('div');
-                        card.className = "bg-white rounded-xl border p-6 flex flex-col md:flex-row items-stretch justify-between shadow-md hover:border-emerald-500 transition gap-4 text-left";
-                        card.innerHTML = `
-                            <div class="flex-1 space-y-4">
-                                <div class="flex items-center space-x-2">
-                                    <span class="${deal.badgeColor} ${deal.textColor} text-xs font-bold px-2.5 py-1 rounded-full uppercase">${deal.type}</span>
-                                    <span class="bg-slate-100 text-slate-700 text-xs font-bold px-2.5 py-1 rounded-full uppercase">${tripType === 'return' ? '🔄 Return Included' : '➡️ One Way'}</span>
-                                </div>
-                                <h2 class="text-2xl font-black text-gray-800">${deal.vehicle}</h2>
-                                ${routeLegsLayout}
-                                <p class="text-xs text-slate-400">${deal.description}</p>
-                            </div>
-                            <div class="text-center md:text-right bg-slate-50 p-5 rounded-xl border min-w-[220px] flex flex-col justify-center">
-                                <span class="text-xs text-gray-400 block font-medium">Total Price</span>
-                                <p class="text-4xl font-black text-slate-900">${activeCurrencySymbol}${convertedPrice}</p>
-                                <button type="button" class="book-transfer-action-trigger mt-3 w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-2.5 rounded-xl text-xs transition shadow-md" 
-                                    data-title="${deal.vehicle}" data-price="${convertedPrice}">
-                                    Book This Transfer
-                                </button>
-                            </div>
-                        `;
-                        target.appendChild(card);
-                    });
+        const card = document.createElement('div');
+        card.className = "bg-white rounded-xl border p-6 flex flex-col md:flex-row items-stretch justify-between shadow-md hover:border-emerald-500 transition gap-4 text-left";
+        card.innerHTML = `
+          <div class="flex-1 space-y-4">
+            <div class="flex items-center space-x-2">
+              <span class="bg-slate-100 text-slate-700 text-xs font-bold px-2.5 py-1 rounded-full uppercase">${tripType === 'return' ? '🔄 Return Included' : '➡️ One Way'}</span>
+            </div>
+            <h2 class="text-2xl font-black text-gray-800">${deal.vehicle}</h2>
+            ${routeLegsLayout}
+          </div>
+          <div class="text-center md:text-right bg-slate-50 p-5 rounded-xl border min-w-[220px] flex flex-col justify-center">
+            <span class="text-xs text-gray-400 block font-medium">Total Price</span>
+            <p class="text-4xl font-black text-slate-900">${activeCurrencySymbol}${convertedPrice}</p>
+            <button type="button" class="book-transfer-action-trigger mt-3 w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-2.5 rounded-xl text-xs transition shadow-md" data-title="${deal.vehicle}" data-price="${convertedPrice}">
+              Book This Transfer
+            </button>
+          </div>
+        `;
+        target.appendChild(card);
+      });
+
+      document.querySelectorAll('.book-transfer-action-trigger').forEach(btn => {
+        btn.addEventListener('click', function() {
+          selectedVehicleTitle = this.getAttribute('data-title');
+          selectedVehiclePrice = this.getAttribute('data-price');
+          document.getElementById('checkoutTargetVehicleSummary').textContent = `${selectedVehicleTitle} — ${cleanAir} to ${cleanDest}`;
+          document.getElementById('checkoutTargetFinalPrice').textContent = `${activeCurrencySymbol}${selectedVehiclePrice}`;
+          document.getElementById('payment-errors').classList.add('hidden');
+          checkoutModal.classList.remove('hidden');
+        });
+      });
+    } else {
+      target.innerHTML = '<div class="text-center py-6 text-rose-500 font-medium">No active routes matching that query structure in our catalog database.</div>';
+    }
+  })
+  .catch(error => {
+    console.error("Fetch Failure:", error);
+    target.innerHTML = '<div class="text-center py-6 text-rose-500 font-medium">⚠️ Connection to server failed. Please try again shortly.</div>';
+  });
+
+  section.scrollIntoView({ behavior: 'smooth' });
+}
 
                     document.querySelectorAll('.book-transfer-action-trigger').forEach(btn => {
                         btn.addEventListener('click', function() {
