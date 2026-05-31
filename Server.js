@@ -1,5 +1,5 @@
 import express from 'express';
-import cors from 'cors'; //
+import cors from 'cors';
 import nodemailer from 'nodemailer';
 import Razorpay from 'razorpay';
 import fs from 'fs';
@@ -14,8 +14,6 @@ app.use(express.json());
 
 const GLOBAL_MARGIN = 0.15;
 
-// CONNECT TO MONGOOSE DATABASE
-// This uses the MONGO_URI environment variable you configured in Render
 // Define the Schema matching your MongoDB document structure
 const priceSchema = new mongoose.Schema({
   destinationKey: { type: String, required: true, lowercase: true, trim: true },
@@ -24,7 +22,9 @@ const priceSchema = new mongoose.Schema({
 });
 
 // Create the model. It will look for a collection named "prices" in your database
-const Price = mongoose.model('Price', priceSchema);
+const Price = mongoose.model('Price', priceSchema, 'prices');
+
+// CONNECT TO MONGOOSE DATABASE
 if (process.env.MONGO_URI) {
   mongoose.connect(process.env.MONGO_URI)
     .then(() => console.log("MongoDB Database connected successfully!"))
@@ -50,7 +50,7 @@ const mailTransport = nodemailer.createTransport({
   }
 });
 
-// HEALTH CHECK ROUTE (Required for Render to monitor app status)
+// HEALTH CHECK ROUTE
 app.get('/', (req, res) => {
   res.status(200).send("Zippygo Backend Running Perfectly.");
 });
@@ -89,28 +89,28 @@ app.post('/api/send-confirmation-email', async (req, res) => {
 });
 
 // SEARCH ENDPOINT: Pulls prices dynamically matching destination keys
-// Change this line to be async so we can await database results
 app.post('/api/search-transfers', async (req, res) => {
   try {
     const { airport, destination, tripType } = req.body;
-if (!airport && !destination) {
-  return res.status(400).json({ success: false, message: "Please provide either an arrival airport or dropoff destination." });
-}
+    if (!airport && !destination) {
+      return res.status(400).json({ success: false, message: "Please provide either an arrival airport or dropoff destination." });
+    }
 
-   // Combine both inputs into a single string to ensure we catch the keyword wherever the user typed it
+    // Clean and normalize the input text from frontend fields
     const searchCombined = `${airport || ''} ${destination || ''}`.trim().toLowerCase().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, "");
     
     let baseShuttlePrice = 25.00;
     let basePrivatePrice = 80.00;
     let matchFound = false;
 
-    // Fetch all active price rules from your MongoDB collection
+    // Fetch all active price rules from your MongoDB collections
     const priceRecords = await Price.find({});
 
-    // Scan database records against the combined search string
+    // FIX: Optimized robust keyword matcher
     const matchedRecord = priceRecords.find(record => {
       const cleanKey = record.destinationKey.toLowerCase().trim();
-      return searchCombined.includes(cleanKey) || cleanKey.includes(searchCombined);
+      // Returns true if your DB keyword (e.g. "tenerife") is found inside the search terms
+      return searchCombined.includes(cleanKey);
     });
 
     if (matchedRecord) {
@@ -118,7 +118,6 @@ if (!airport && !destination) {
       basePrivatePrice = parseFloat(matchedRecord.private) || basePrivatePrice;
       matchFound = true;
     }
-    // ───────────────────────────────────────────────────────────────────
 
     const marginMultiplier = 1 + GLOBAL_MARGIN;
     const tripMultiplier = tripType === 'return' ? 2 : 1;
@@ -152,6 +151,7 @@ if (!airport && !destination) {
     return res.status(500).json({ success: false, error: "Internal search configurations fault." });
   }
 });
-// CRITICAL FIX: Dynamically binding port for Render with local fallback to 3000
+
+// Dynamic Port Binding
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Server executing seamlessly on port ${PORT}`));
