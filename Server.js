@@ -146,5 +146,5 @@ app.post('/api/search-transfers', (req, res) => {
 });
 
 // App listener configured strictly to run on port 3000
-const PORT = 3000;
+const PORT = 10000;
 app.listen(PORT, () => console.log(`Server executing seamlessly on port ${PORT}`));
