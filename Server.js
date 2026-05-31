@@ -84,50 +84,61 @@ app.post('/api/search-transfers', (req, res) => {
       return res.status(400).json({ success: false, message: "Missing destination payload." });
     } 
 
-    // Clean up input for seamless comparison
-    const searchDest = destination.trim().toLowerCase();
+    // Clean up input for seamless comparison (remove spaces, punctuation, lowercase it)
+    const searchDest = destination.trim().toLowerCase().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,"");
+    
+    // Default fallback base rates if no exact match is found
     let baseShuttlePrice = 25.00;
     let basePrivatePrice = 80.00; 
+    let matchFound = false;
 
     const filePath = path.resolve('prices.json'); 
     if (fs.existsSync(filePath)) {
       const rawData = fs.readFileSync(filePath, 'utf8');
       const priceMatrix = JSON.parse(rawData);
       
-      // Forces robust lowercase check across user inputs and json keys
-      const matchedKey = Object.keys(priceMatrix).find(key => 
-        searchDest.includes(key.toLowerCase()) || key.toLowerCase().includes(searchDest)
-      );
+      // Smart fuzzy matching: Check if any part of the keys or destinations intersect
+      const matchedKey = Object.keys(priceMatrix).find(key => {
+        const cleanKey = key.toLowerCase().trim();
+        return searchDest.includes(cleanKey) || cleanKey.includes(searchDest);
+      });
       
       if (matchedKey) {
         baseShuttlePrice = parseFloat(priceMatrix[matchedKey].shuttle) || baseShuttlePrice;
         basePrivatePrice = parseFloat(priceMatrix[matchedKey].private) || basePrivatePrice;
-      } else {
-        console.log(`No direct match found for "${searchDest}". Utilizing fallback standard pricing.`);
+        matchFound = true;
+        console.log(`Matched key found: ${matchedKey}`);
       }
-    } else {
-      console.warn("prices.json missing from root directory. Using system defaults.");
-    }
+    } 
 
     const marginMultiplier = 1 + GLOBAL_MARGIN;
     const tripMultiplier = tripType === 'return' ? 2 : 1;
     const finalShuttleGbp = (baseShuttlePrice * marginMultiplier * tripMultiplier).toFixed(2);
     const finalPrivateGbp = (basePrivatePrice * marginMultiplier * tripMultiplier).toFixed(2);
 
+    // Always compile deals, using standard fallback rates if matching failed
     const combinedDeals = [
       {
         id: "ZP-SHUTTLE-" + Math.random().toString(36).substr(2, 4).toUpperCase(),
         vehicle: tripType === 'return' ? 'Shared Shuttle Transit (Return)' : 'Shared Shuttle Transit (One Way)',
-        priceGbp: finalShuttleGbp
+        priceGbp: finalShuttleGbp,
+        isEstimated: !matchFound
       },
       {
         id: "ZP-PRIVATE-" + Math.random().toString(36).substr(2, 4).toUpperCase(),
         vehicle: tripType === 'return' ? 'Private Executive Micro-Bus (Return)' : 'Private Executive Micro-Bus (One Way)',
-        priceGbp: finalPrivateGbp
+        priceGbp: finalPrivateGbp,
+        isEstimated: !matchFound
       }
     ];
 
-    return res.status(200).json({ success: true, options: combinedDeals });
+    // CRITICAL: Always respond with success: true and the options array
+    return res.status(200).json({ 
+      success: true, 
+      options: combinedDeals,
+      message: matchFound ? "Exact match located." : "Using generalized regional transfer rates."
+    });
+
   } catch (error) {
     console.error("Search system error:", error);
     return res.status(500).json({ success: false, error: "Internal search configurations fault." });
