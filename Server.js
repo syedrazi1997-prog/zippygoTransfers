@@ -61,7 +61,7 @@ app.post('/api/search-transfers', (req, res) => {
 
         const combinedDeals = [
             {
-                id: "GT-SHUTTLE-" + Math.random().toString(36).substr(2, 4).toUpperCase(),
+                id: "ZP-SHUTTLE-" + Math.random().toString(36).substr(2, 4).toUpperCase(),
                 vehicle: tripType === 'return' ? 'Shared Shuttle Transit (Return)' : 'Shared Shuttle Transit (One Way)',
                 priceGbp: finalShuttleGbp,
                 type: "Shuttle Service",
@@ -70,7 +70,7 @@ app.post('/api/search-transfers', (req, res) => {
                 description: "⏱️ Centralized terminal drops • Free cancellations • Luggage tracking included."
             },
             {
-                id: "GT-PRIVATE-" + Math.random().toString(36).substr(2, 4).toUpperCase(),
+                id: "ZP-PRIVATE-" + Math.random().toString(36).substr(2, 4).toUpperCase(),
                 vehicle: tripType === 'return' ? 'Premium Private Sedan (Return)' : 'Premium Private Sedan (One Way)',
                 priceGbp: finalPrivateGbp,
                 type: "Private Sedan",
