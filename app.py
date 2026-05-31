@@ -7,11 +7,15 @@ app = Flask(__name__)
 
 async def run_scraper():
     async with async_playwright() as p:
-        # CRITICAL: Must be headless=True for Render cloud servers
-        browser = await playwright.chromium.launch(headless=True)
-context = await browser.new_context(
-    user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36..."
-)
+        # FIX 1: Changed 'playwright.chromium' to 'p.chromium' to match context variable
+        browser = await p.chromium.launch(headless=True)
+        context = await browser.new_context(
+            user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+        )
+        
+        # FIX 2: Explicitly initialize the 'page' variable before using it
+        page = await context.new_page()
+        
         print("Navigating to Suntransfers...")
         await page.goto("https://www.suntransfers.com/", wait_until="networkidle")
         
