@@ -6,6 +6,8 @@ import fs from 'fs';
 import path from 'path';
 
 const app = express();
+
+// Middleware Configurations
 app.use(cors());
 app.use(express.json());
 
@@ -92,14 +94,14 @@ app.post('/api/search-transfers', (req, res) => {
       const rawData = fs.readFileSync(filePath, 'utf8');
       const priceMatrix = JSON.parse(rawData);
       
-      // FIX: Convert keys to lowercase before running .includes() check
+      // Forces robust lowercase check across user inputs and json keys
       const matchedKey = Object.keys(priceMatrix).find(key => 
         searchDest.includes(key.toLowerCase()) || key.toLowerCase().includes(searchDest)
       );
       
       if (matchedKey) {
-        baseShuttlePrice = parseFloat(priceMatrix[matchedKey].shuttle);
-        basePrivatePrice = parseFloat(priceMatrix[matchedKey].private);
+        baseShuttlePrice = parseFloat(priceMatrix[matchedKey].shuttle) || baseShuttlePrice;
+        basePrivatePrice = parseFloat(priceMatrix[matchedKey].private) || basePrivatePrice;
       } else {
         console.log(`No direct match found for "${searchDest}". Utilizing fallback standard pricing.`);
       }
@@ -131,3 +133,7 @@ app.post('/api/search-transfers', (req, res) => {
     return res.status(500).json({ success: false, error: "Internal search configurations fault." });
   }
 });
+
+// App listener configured strictly to run on port 3000
+const PORT = 3000;
+app.listen(PORT, () => console.log(`Server executing seamlessly on port ${PORT}`));
