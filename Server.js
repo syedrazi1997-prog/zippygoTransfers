@@ -82,7 +82,8 @@ app.post('/api/search-transfers', (req, res) => {
       return res.status(400).json({ success: false, message: "Missing destination payload." });
     } 
 
-    const searchDest = destination.toLowerCase();
+    // Clean up input for seamless comparison
+    const searchDest = destination.trim().toLowerCase();
     let baseShuttlePrice = 25.00;
     let basePrivatePrice = 80.00; 
 
@@ -90,13 +91,21 @@ app.post('/api/search-transfers', (req, res) => {
     if (fs.existsSync(filePath)) {
       const rawData = fs.readFileSync(filePath, 'utf8');
       const priceMatrix = JSON.parse(rawData);
-      const matchedKey = Object.keys(priceMatrix).find(key => searchDest.includes(key));
+      
+      // FIX: Convert keys to lowercase before running .includes() check
+      const matchedKey = Object.keys(priceMatrix).find(key => 
+        searchDest.includes(key.toLowerCase()) || key.toLowerCase().includes(searchDest)
+      );
       
       if (matchedKey) {
-        baseShuttlePrice = priceMatrix[matchedKey].shuttle;
-        basePrivatePrice = priceMatrix[matchedKey].private;
+        baseShuttlePrice = parseFloat(priceMatrix[matchedKey].shuttle);
+        basePrivatePrice = parseFloat(priceMatrix[matchedKey].private);
+      } else {
+        console.log(`No direct match found for "${searchDest}". Utilizing fallback standard pricing.`);
       }
-    } 
+    } else {
+      console.warn("prices.json missing from root directory. Using system defaults.");
+    }
 
     const marginMultiplier = 1 + GLOBAL_MARGIN;
     const tripMultiplier = tripType === 'return' ? 2 : 1;
@@ -118,10 +127,7 @@ app.post('/api/search-transfers', (req, res) => {
 
     return res.status(200).json({ success: true, options: combinedDeals });
   } catch (error) {
-    return res.status(500).json({ success: false, error: error.message });
+    console.error("Search system error:", error);
+    return res.status(500).json({ success: false, error: "Internal search configurations fault." });
   }
 });
-
-// App listener
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server executing seamlessly on port ${PORT}`));
