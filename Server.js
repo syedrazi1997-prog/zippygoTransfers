@@ -97,19 +97,20 @@ app.post('/api/search-transfers', async (req, res) => {
       return res.status(400).json({ success: false, message: "Missing destination payload." });
     }
 
-    const searchDest = destination.trim().toLowerCase().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, "");
+   // Combine both inputs into a single string to ensure we catch the keyword wherever the user typed it
+    const searchCombined = `${airport || ''} ${destination || ''}`.trim().toLowerCase().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, "");
+    
     let baseShuttlePrice = 25.00;
     let basePrivatePrice = 80.00;
     let matchFound = false;
 
-    // ─── NEW MONGODB FETCH BLOCK ────────────────────────────────────────
-    // Fetch all active price rules from your MongoDB collections
+    // Fetch all active price rules from your MongoDB collection
     const priceRecords = await Price.find({});
 
-    // Scan the database records to see if the user's input matches a key
+    // Scan database records against the combined search string
     const matchedRecord = priceRecords.find(record => {
       const cleanKey = record.destinationKey.toLowerCase().trim();
-      return searchDest.includes(cleanKey) || cleanKey.includes(searchDest);
+      return searchCombined.includes(cleanKey) || cleanKey.includes(searchCombined);
     });
 
     if (matchedRecord) {
