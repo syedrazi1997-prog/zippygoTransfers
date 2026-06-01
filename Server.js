@@ -28,8 +28,8 @@ if (process.env.MONGO_URI) {
     .catch((err) => console.error("Database connection error:", err));
 }
 
-// Initialize Stripe with your test key directly as a fallback
-const stripe = Stripe(process.env.STRIPE_SECRET_KEY || 'mk_1TYoQu4xSQ4u2uQiGsS3I4ee');
+// Initialize Stripe with your valid sk_test Secret Key fallback
+const stripe = Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_51TYoQt4xSQ4u2uQiZR8QWeq4UdZvoBffaGvsJnvxUwvrjnnyglxRBzpH5vmwRxg8MlwwP9svz2isMxd3ZIJIbyww00UziEIXX0');
 
 // REGISTERED BREVO MAIL RELAY CONFIGURATION
 const mailTransport = nodemailer.createTransport({
@@ -83,22 +83,15 @@ app.post('/api/send-confirmation-email', async (req, res) => {
 // SEARCH ENDPOINT: Dynamically maps passenger count to customized randomized pricing matrices
 app.post('/api/search-transfers', async (req, res) => {
   try {
-    // Extract passenger totals sent by frontend form
     const { airport, destination, tripType, passengers } = req.body;
-    
-    // Fallback to 2 passengers if field isn't mapped properly from frontend
     const paxCount = parseInt(passengers) || 2; 
 
-    // Generate random baseline per-person costs
-    // Shared Shuttles scale purely per person. Private vehicles scale incrementally by brackets.
-    const perPassengerShuttleBase = Math.floor(Math.random() * (18 - 12 + 1)) + 12; // £12 to £18 per head
-    const perPassengerPrivateBase = Math.floor(Math.random() * (35 - 25 + 1)) + 25; // £25 to £35 per head
+    const perPassengerShuttleBase = Math.floor(Math.random() * (18 - 12 + 1)) + 12; 
+    const perPassengerPrivateBase = Math.floor(Math.random() * (35 - 25 + 1)) + 25; 
 
-    // Calculate specific pricing sums based on travelers volume
     let totalShuttlePrice = perPassengerShuttleBase * paxCount;
     let totalPrivatePrice = perPassengerPrivateBase * paxCount;
 
-    // Apply corporate margins and trip multiplier values
     const marginMultiplier = 1 + GLOBAL_MARGIN;
     const tripMultiplier = tripType === 'return' ? 2 : 1;
 
