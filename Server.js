@@ -4,7 +4,7 @@ const nodemailer = require('nodemailer');
 const Stripe = require('stripe');
 const mongoose = require('mongoose');
 
-const app = Web service express();
+const app = express();
 
 // Middleware Configurations
 app.use(cors());
