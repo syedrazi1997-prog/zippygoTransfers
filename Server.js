@@ -1,10 +1,8 @@
-import express from 'express';
-import cors from 'cors';
-import nodemailer from 'nodemailer';
-import Stripe from 'stripe';
-import fs from 'fs';
-import path from 'path';
-import mongoose from 'mongoose';
+const express = require('express');
+const cors = require('cors');
+const nodemailer = require('nodemailer');
+const Stripe = require('stripe');
+const mongoose = require('mongoose');
 
 const app = express();
 
@@ -21,7 +19,6 @@ const priceSchema = new mongoose.Schema({
   private: { type: String, required: true }
 });
 
-// Create the model. It will look for a collection named "prices" in your database
 const Price = mongoose.model('Price', priceSchema, 'prices');
 
 // CONNECT TO MONGOOSE DATABASE
@@ -29,12 +26,10 @@ if (process.env.MONGO_URI) {
   mongoose.connect(process.env.MONGO_URI)
     .then(() => console.log("MongoDB Database connected successfully!"))
     .catch((err) => console.error("Database connection error:", err));
-} else {
-  console.log("Warning: MONGO_URI environment variable is missing.");
 }
 
-// Initialize Stripe with your provided Test Key
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'mk_1TYoQu4xSQ4u2uQiGsS3I4ee');
+// Initialize Stripe with your test key directly as a fallback
+const stripe = Stripe(process.env.STRIPE_SECRET_KEY || 'mk_1TYoQu4xSQ4u2uQiGsS3I4ee');
 
 // REGISTERED BREVO MAIL RELAY CONFIGURATION
 const mailTransport = nodemailer.createTransport({
@@ -52,63 +47,21 @@ app.get('/', (req, res) => {
   res.status(200).send("Zippygo Backend Running Perfectly.");
 });
 
-// AUTOMATED EMAIL RECEIPT PROCESSING SYSTEM
-app.post('/api/send-confirmation-email', async (req, res) => {
-  try {
-    const order = req.body;
-    if (!order.email) {
-      return res.status(400).json({ success: false, message: "Missing recipient email address." });
-    }
-    const emailLayout = `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; border: 1px solid #e2e8f0; padding: 24px; border-radius: 16px;">
-        <h2 style="color: #10b981; margin-bottom: 4px;">Zippygo Booking Confirmed!</h2>
-        <p style="font-size: 14px; color: #64748b;">Thank you for your reservation. Your transfer is booked.</p>
-        <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 20px 0;" />
-        <p><strong>Booking Reference:</strong> ${order.id}</p>
-        <p><strong>Passenger Name:</strong> ${order.firstName} ${order.lastName}</p>
-        <p><strong>Vehicle Type:</strong> ${order.vehicle}</p>
-        <p><strong>Route Details:</strong> ${order.from} &rarr; ${order.to}</p>
-        <p><strong>Total Price:</strong> ${order.currency}${order.price}</p>
-      </div>
-    `;
-    const mailOptions = {
-      from: '"Zippygo Transfers" <bookings@zippygotransfers.com>',
-      to: order.email,
-      subject: `Booking Confirmed: ${order.id} - Zippygo`,
-      html: emailLayout
-    };
-    await mailTransport.sendMail(mailOptions);
-    return res.status(200).json({ success: true, message: "Receipt sent successfully!" });
-  } catch (error) {
-    console.error("Mail system failure logs:", error);
-    return res.status(500).json({ success: false, message: "Email transmission failed.", error: error.message });
-  }
-});
-
-// SEARCH ENDPOINT: Pulls dynamic database prices or returns a realistic randomized layout fallback
+// SEARCH ENDPOINT
 app.post('/api/search-transfers', async (req, res) => {
   try {
     const { airport, destination, tripType } = req.body;
-    
     const searchCombined = `${airport || ''} ${destination || ''}`.trim().toLowerCase().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, "");
     
     let baseShuttlePrice = Math.floor(Math.random() * (45 - 25 + 1)) + 25;
     let basePrivatePrice = Math.floor(Math.random() * (110 - 70 + 1)) + 70;
     let matchFound = false;
 
-    let priceRecords = [];
-    try {
-      priceRecords = await Price.find({});
-    } catch (dbErr) {
-      console.log("Skipping live database lookups, falling back to instant randomization metrics.");
-    }
-
+    let priceRecords = await Price.find({});
     if (priceRecords.length > 0) {
       const matchedRecord = priceRecords.find(record => {
-        const cleanKey = record.destinationKey.toLowerCase().trim();
-        return searchCombined.includes(cleanKey);
+        return searchCombined.includes(record.destinationKey.toLowerCase().trim());
       });
-
       if (matchedRecord) {
         baseShuttlePrice = parseFloat(matchedRecord.shuttle) || baseShuttlePrice;
         basePrivatePrice = parseFloat(matchedRecord.private) || basePrivatePrice;
@@ -119,66 +72,46 @@ app.post('/api/search-transfers', async (req, res) => {
     const marginMultiplier = 1 + GLOBAL_MARGIN;
     const tripMultiplier = tripType === 'return' ? 2 : 1;
 
-    const finalShuttleGbp = (baseShuttlePrice * marginMultiplier * tripMultiplier).toFixed(2);
-    const finalPrivateGbp = (basePrivatePrice * marginMultiplier * tripMultiplier).toFixed(2);
-
     const combinedDeals = [
       {
         id: "ZP-SHUTTLE-" + Math.random().toString(36).substr(2, 4).toUpperCase(),
         vehicle: tripType === 'return' ? 'Shared Shuttle Transit (Return)' : 'Shared Shuttle Transit (One Way)',
-        priceGbp: finalShuttleGbp,
-        isEstimated: !matchFound
+        priceGbp: (baseShuttlePrice * marginMultiplier * tripMultiplier).toFixed(2)
       },
       {
         id: "ZP-PRIVATE-" + Math.random().toString(36).substr(2, 4).toUpperCase(),
         vehicle: tripType === 'return' ? 'Private Executive Micro-Bus (Return)' : 'Private Executive Micro-Bus (One Way)',
-        priceGbp: finalPrivateGbp,
-        isEstimated: !matchFound
+        priceGbp: (basePrivatePrice * marginMultiplier * tripMultiplier).toFixed(2)
       }
     ];
 
-    return res.status(200).json({
-      success: true,
-      options: combinedDeals,
-      message: matchFound ? "Exact match located from database." : "Using generalized regional transfer rates."
-    });
-
+    return res.status(200).json({ success: true, options: combinedDeals });
   } catch (error) {
-    console.error("Search engine subsystem fault:", error);
-    return res.status(500).json({ success: false, error: "Internal search configurations fault." });
+    return res.status(500).json({ success: false, error: error.message });
   }
 });
 
-// STRIPE BACKEND PAYMENT INTENT GENERATION ENGINE
+// STRIPE INTENT ROUTE
 app.post('/api/create-stripe-payment-intent', async (req, res) => {
   try {
     const { amount, currency } = req.body;
-    
-    if (!amount || !currency) {
-      return res.status(400).json({ success: false, message: "Missing payment intent configurations parameters." });
-    }
-
-    // Stripe expects values parsed inside their lowest subunit denominator (e.g., Pence/Cents)
     const calculatedSubunitAmount = Math.round(parseFloat(amount) * 100);
 
     const paymentIntent = await stripe.paymentIntents.create({
       amount: calculatedSubunitAmount,
       currency: currency.toLowerCase(),
-      automatic_payment_methods: { enabled: true },
+      automatic_payment_methods: { enabled: true }
     });
 
     return res.status(200).json({
       success: true,
-      clientSecret: paymentIntent.client_secret,
-      message: "Stripe secure payment intent generated successfully."
+      clientSecret: paymentIntent.client_secret
     });
-
-  } catch (gatewayError) {
-    console.error("Stripe gateway intent failure:", gatewayError);
-    return res.status(500).json({ success: false, error: gatewayError.message });
+  } catch (error) {
+    console.error("Stripe Token Failure:", error);
+    return res.status(500).json({ success: false, message: error.message });
   }
 });
 
-// Dynamic Port Binding
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Server executing seamlessly on port ${PORT}`));
