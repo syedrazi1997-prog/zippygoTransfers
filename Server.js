@@ -1,7 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import nodemailer from 'nodemailer';
-import Razorpay from 'razorpay';
+import Stripe from 'stripe';
 import fs from 'fs';
 import path from 'path';
 import mongoose from 'mongoose';
@@ -33,11 +33,8 @@ if (process.env.MONGO_URI) {
   console.log("Warning: MONGO_URI environment variable is missing.");
 }
 
-// Initialize Razorpay with Fallbacks
-const razorpay = new Razorpay({
-  key_id: process.env.RAZORPAY_KEY_ID || 'rzp_test_SrbMdYkhgSZhGZ',
-  key_secret: process.env.RAZORPAY_KEY_SECRET || 'Og111ZSrIdsfkSS67ZgQissX'
-});
+// Initialize Stripe with your provided Test Key
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'mk_1TYoQu4xSQ4u2uQiGsS3I4ee');
 
 // REGISTERED BREVO MAIL RELAY CONFIGURATION
 const mailTransport = nodemailer.createTransport({
@@ -93,16 +90,12 @@ app.post('/api/search-transfers', async (req, res) => {
   try {
     const { airport, destination, tripType } = req.body;
     
-    // Clean and normalize input text strings
     const searchCombined = `${airport || ''} ${destination || ''}`.trim().toLowerCase().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, "");
     
-    // Fallback baseline defaults (used if no match is found)
-    // Generates a randomized base pricing range to guarantee options render on screen
     let baseShuttlePrice = Math.floor(Math.random() * (45 - 25 + 1)) + 25;
     let basePrivatePrice = Math.floor(Math.random() * (110 - 70 + 1)) + 70;
     let matchFound = false;
 
-    // Fetch active rules from MongoDB if URI is configured
     let priceRecords = [];
     try {
       priceRecords = await Price.find({});
@@ -110,7 +103,6 @@ app.post('/api/search-transfers', async (req, res) => {
       console.log("Skipping live database lookups, falling back to instant randomization metrics.");
     }
 
-    // Match keywords against user input string
     if (priceRecords.length > 0) {
       const matchedRecord = priceRecords.find(record => {
         const cleanKey = record.destinationKey.toLowerCase().trim();
@@ -154,6 +146,36 @@ app.post('/api/search-transfers', async (req, res) => {
   } catch (error) {
     console.error("Search engine subsystem fault:", error);
     return res.status(500).json({ success: false, error: "Internal search configurations fault." });
+  }
+});
+
+// STRIPE BACKEND PAYMENT INTENT GENERATION ENGINE
+app.post('/api/create-stripe-payment-intent', async (req, res) => {
+  try {
+    const { amount, currency } = req.body;
+    
+    if (!amount || !currency) {
+      return res.status(400).json({ success: false, message: "Missing payment intent configurations parameters." });
+    }
+
+    // Stripe expects values parsed inside their lowest subunit denominator (e.g., Pence/Cents)
+    const calculatedSubunitAmount = Math.round(parseFloat(amount) * 100);
+
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount: calculatedSubunitAmount,
+      currency: currency.toLowerCase(),
+      automatic_payment_methods: { enabled: true },
+    });
+
+    return res.status(200).json({
+      success: true,
+      clientSecret: paymentIntent.client_secret,
+      message: "Stripe secure payment intent generated successfully."
+    });
+
+  } catch (gatewayError) {
+    console.error("Stripe gateway intent failure:", gatewayError);
+    return res.status(500).json({ success: false, error: gatewayError.message });
   }
 });
 
