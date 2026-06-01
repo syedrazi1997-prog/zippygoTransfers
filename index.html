@@ -425,10 +425,10 @@
         })
       })
       .then(res => res.json())
-      .then(data => {
-        target.innerHTML = '';
-        if (data.success && data.options) {
-          data.options.forEach(deal => {
+     .then(data => {
+  target.innerHTML = '';
+  if (data.success && data.options) { //  Fixed: Matches backend "options" payload key
+    data.options.forEach(deal => {
             const convertedPrice = (parseFloat(deal.priceGbp) * activeExchangeRate).toFixed(2);
             const routeLegsLayout = tripType === 'return' ? 
               `<div class="space-y-1 text-xs font-bold text-slate-500">
