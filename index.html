@@ -421,7 +421,8 @@
         body: JSON.stringify({
           airport: airIn.value,
           destination: destIn.value,
-          tripType: tripType
+          tripType: tripType,
+          passengers: document.getElementById('passengerSelect').value // Passes selected traveler counts
         })
       })
       .then(res => res.json())
