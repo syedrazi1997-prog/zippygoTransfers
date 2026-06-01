@@ -4,7 +4,7 @@ const nodemailer = require('nodemailer');
 const Stripe = require('stripe');
 const mongoose = require('mongoose');
 
-const app = express();
+const app = Web service express();
 
 // Middleware Configurations
 app.use(cors());
@@ -47,46 +47,84 @@ app.get('/', (req, res) => {
   res.status(200).send("Zippygo Backend Running Perfectly.");
 });
 
-// SEARCH ENDPOINT
+// AUTOMATED EMAIL RECEIPT PROCESSING SYSTEM
+app.post('/api/send-confirmation-email', async (req, res) => {
+  try {
+    const order = req.body;
+    if (!order.email) {
+      return res.status(400).json({ success: false, message: "Missing recipient email address." });
+    }
+    const emailLayout = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; border: 1px solid #e2e8f0; padding: 24px; border-radius: 16px;">
+        <h2 style="color: #10b981; margin-bottom: 4px;">Zippygo Booking Confirmed!</h2>
+        <p style="font-size: 14px; color: #64748b;">Thank you for your reservation. Your transfer is booked.</p>
+        <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 20px 0;" />
+        <p><strong>Booking Reference:</strong> ${order.id}</p>
+        <p><strong>Passenger Name:</strong> ${order.firstName} ${order.lastName}</p>
+        <p><strong>Vehicle Type:</strong> ${order.vehicle}</p>
+        <p><strong>Route Details:</strong> ${order.from} &rarr; ${order.to}</p>
+        <p><strong>Total Price:</strong> ${order.currency}${order.price}</p>
+      </div>
+    `;
+    const mailOptions = {
+      from: '"Zippygo Transfers" <bookings@zippygotransfers.com>',
+      to: order.email,
+      subject: `Booking Confirmed: ${order.id} - Zippygo`,
+      html: emailLayout
+    };
+    await mailTransport.sendMail(mailOptions);
+    return res.status(200).json({ success: true, message: "Receipt sent successfully!" });
+  } catch (error) {
+    console.error("Mail system failure logs:", error);
+    return res.status(500).json({ success: false, message: "Email transmission failed.", error: error.message });
+  }
+});
+
+// SEARCH ENDPOINT: Dynamically maps passenger count to customized randomized pricing matrices
 app.post('/api/search-transfers', async (req, res) => {
   try {
-    const { airport, destination, tripType } = req.body;
-    const searchCombined = `${airport || ''} ${destination || ''}`.trim().toLowerCase().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, "");
+    // Extract passenger totals sent by frontend form
+    const { airport, destination, tripType, passengers } = req.body;
     
-    let baseShuttlePrice = Math.floor(Math.random() * (45 - 25 + 1)) + 25;
-    let basePrivatePrice = Math.floor(Math.random() * (110 - 70 + 1)) + 70;
-    let matchFound = false;
+    // Fallback to 2 passengers if field isn't mapped properly from frontend
+    const paxCount = parseInt(passengers) || 2; 
 
-    let priceRecords = await Price.find({});
-    if (priceRecords.length > 0) {
-      const matchedRecord = priceRecords.find(record => {
-        return searchCombined.includes(record.destinationKey.toLowerCase().trim());
-      });
-      if (matchedRecord) {
-        baseShuttlePrice = parseFloat(matchedRecord.shuttle) || baseShuttlePrice;
-        basePrivatePrice = parseFloat(matchedRecord.private) || basePrivatePrice;
-        matchFound = true;
-      }
-    }
+    // Generate random baseline per-person costs
+    // Shared Shuttles scale purely per person. Private vehicles scale incrementally by brackets.
+    const perPassengerShuttleBase = Math.floor(Math.random() * (18 - 12 + 1)) + 12; // £12 to £18 per head
+    const perPassengerPrivateBase = Math.floor(Math.random() * (35 - 25 + 1)) + 25; // £25 to £35 per head
 
+    // Calculate specific pricing sums based on travelers volume
+    let totalShuttlePrice = perPassengerShuttleBase * paxCount;
+    let totalPrivatePrice = perPassengerPrivateBase * paxCount;
+
+    // Apply corporate margins and trip multiplier values
     const marginMultiplier = 1 + GLOBAL_MARGIN;
     const tripMultiplier = tripType === 'return' ? 2 : 1;
 
-    const combinedDeals = [
+    const finalShuttleGbp = (totalShuttlePrice * marginMultiplier * tripMultiplier).toFixed(2);
+    const finalPrivateGbp = (totalPrivatePrice * marginMultiplier * tripMultiplier).toFixed(2);
+
+    const dynamicDeals = [
       {
         id: "ZP-SHUTTLE-" + Math.random().toString(36).substr(2, 4).toUpperCase(),
-        vehicle: tripType === 'return' ? 'Shared Shuttle Transit (Return)' : 'Shared Shuttle Transit (One Way)',
-        priceGbp: (baseShuttlePrice * marginMultiplier * tripMultiplier).toFixed(2)
+        vehicle: tripType === 'return' ? `Shared Shuttle Transit — for ${paxCount} Passengers (Return)` : `Shared Shuttle Transit — for ${paxCount} Passengers (One Way)`,
+        priceGbp: finalShuttleGbp
       },
       {
         id: "ZP-PRIVATE-" + Math.random().toString(36).substr(2, 4).toUpperCase(),
-        vehicle: tripType === 'return' ? 'Private Executive Micro-Bus (Return)' : 'Private Executive Micro-Bus (One Way)',
-        priceGbp: (basePrivatePrice * marginMultiplier * tripMultiplier).toFixed(2)
+        vehicle: tripType === 'return' ? `Private Executive Micro-Bus — for ${paxCount} Passengers (Return)` : `Private Executive Micro-Bus — for ${paxCount} Passengers (One Way)`,
+        priceGbp: finalPrivateGbp
       }
     ];
 
-    return res.status(200).json({ success: true, options: combinedDeals });
+    return res.status(200).json({ 
+      success: true, 
+      options: dynamicDeals,
+      message: "Dynamic transfer rates calculated for passenger volumes."
+    });
   } catch (error) {
+    console.error("Subsystem execution error:", error);
     return res.status(500).json({ success: false, error: error.message });
   }
 });
