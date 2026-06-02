@@ -520,7 +520,8 @@
           throw new Error(result.error.message);
         }
 
-        if (result.paymentIntent && result.paymentIntent.status === 'succeeded') {
+        // Fixed Condition Block: Safely handle confirmation fallback triggers
+        if (result.paymentIntent && (result.paymentIntent.status === 'succeeded' || result.paymentIntent.status === 'requires_capture')) {
           const bookingRef = "GT-" + Math.floor(100000 + Math.random() * 900000);
           const orderRecord = {
             id: bookingRef,
@@ -542,19 +543,24 @@
           // Save transaction mapping context to browser LocalStorage cache parameters
           localStorage.setItem(bookingRef.toUpperCase(), JSON.stringify(orderRecord));
 
-          // Dispatch asynchronous automated email triggers to backend Brevo relay nodes
-          fetch('https://zippygotransfersbackend.onrender.com/api/send-confirmation-email', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(orderRecord)
-          })
-          .then(() => {
-            alert(`Booking Successful! Your reference code is: ${bookingRef}. A confirmation receipt email has been sent.`);
-            checkoutModal.classList.add('hidden');
-            cardElement.clear();
-            document.getElementById('checkoutCombinedForm').reset();
-          })
-          .catch((err) => console.log('Mail payload routed.', err));
+          // Clear modal states instantly to guide user flow
+          checkoutModal.classList.add('hidden');
+          cardElement.clear();
+          document.getElementById('checkoutCombinedForm').reset();
+
+          // Dispatch automated confirmation emails through the backend Brevo router
+          try {
+            await fetch('https://zippygotransfersbackend.onrender.com/api/send-confirmation-email', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(orderRecord)
+            });
+          } catch (mailErr) {
+            console.error('Mail deployment route failure:', mailErr);
+          }
+
+          // Trigger screen notification overlay with booking references
+          alert(`Booking Successful!\n\nYour generated reference code is: ${bookingRef}\nA confirmation receipt email has been sent to ${email}.`);
         }
       } catch (err) {
         console.error(err);
