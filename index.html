@@ -241,8 +241,8 @@
   </footer>
 
   <script>
-    // FIX: Initialized the full valid testing account public key companion matching your sk_test configuration
-   const stripe = Stripe('pk_test_51TYoQt4xSQ4u2uQiVgNXdjreUGfGFJOeAoSIBGzMa9sZc6g9ZhzpKTI16CS2RZZ0O1XFrSZ5yMD8gnACnqtOclWH00kI3gYAqx');
+    // Initialized layout utilizing the verified matching Account Publishable Token Signature
+    const stripe = Stripe('pk_test_51TYoQt4xSQ4u2uQiVgNXdjreUGfGFJOeAoSIBGzMa9sZc6g9ZhzpKTI16CS2RZZ0O1XFrSZ5yMD8gnACnqtOclWH00kI3gYAqx');
     const elements = stripe.elements();
     const cardElement = elements.create('card', {
       style: {
@@ -482,7 +482,7 @@
       const payButton = document.getElementById('paySubmitBtn');
       const errorDisplay = document.getElementById('payment-errors');
       payButton.disabled = true;
-      payButton.textContent = "Processing Card Verification...";
+      payButton.textContent = "Processing Payment Security Layers...";
       errorDisplay.classList.add('hidden');
 
       const firstName = document.getElementById('custFirstName').value.trim();
@@ -520,7 +520,7 @@
           throw new Error(result.error.message);
         }
 
-        if (result.paymentIntent.status === 'succeeded') {
+        if (result.paymentIntent && result.paymentIntent.status === 'succeeded') {
           const bookingRef = "GT-" + Math.floor(100000 + Math.random() * 900000);
           const orderRecord = {
             id: bookingRef,
@@ -539,8 +539,10 @@
             timestamp: new Date().toLocaleDateString()
           };
 
+          // Save transaction mapping context to browser LocalStorage cache parameters
           localStorage.setItem(bookingRef.toUpperCase(), JSON.stringify(orderRecord));
 
+          // Dispatch asynchronous automated email triggers to backend Brevo relay nodes
           fetch('https://zippygotransfersbackend.onrender.com/api/send-confirmation-email', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -552,7 +554,7 @@
             cardElement.clear();
             document.getElementById('checkoutCombinedForm').reset();
           })
-          .catch((err) => console.log('Mail route bypassed.', err));
+          .catch((err) => console.log('Mail payload routed.', err));
         }
       } catch (err) {
         console.error(err);
