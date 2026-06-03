@@ -695,7 +695,7 @@
       liveChatLogContainer.scrollTop = liveChatLogContainer.scrollHeight;
 
       try {
-        const aiHook = await fetch('/api/live-support-chat', {
+       const aiHook = await fetch('https://zippygotransfersbackend.onrender.com/api/live-support-chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
