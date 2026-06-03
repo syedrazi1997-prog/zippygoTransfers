@@ -674,7 +674,7 @@
     });
     minimizeChatWidgetBtn.addEventListener('click', () => liveChatWidgetContainer.classList.add('hidden'));
 
-    // CONNECTS FRONTEND CHAT PANEL TO AI COMPLETION ROUTING LAYER
+ // CONNECTS FRONTEND CHAT PANEL DIRECTLY TO AI CORE COMPLETION LAYER
     async function appendLiveSupportChatMessage() {
       const text = liveChatMessageInput.value.trim();
       if (!text) return;
@@ -695,12 +695,20 @@
       liveChatLogContainer.scrollTop = liveChatLogContainer.scrollHeight;
 
       try {
-       const aiHook = await fetch('https://zippygotransfersbackend.onrender.com/api/live-support-chat', {
+        const systemInstruction = `You are the official Zippygo Live Chat AI Support Agent. Be polite, concise, professional, and helpful. Assist the customer with airport transit rules, booking modifications, luggage options, and pricing questions. If the customer asks about an active booking, refer to this local data context if present: ${JSON.stringify(lastGeneratedBookingCache || {})}. Keep answers under 3 sentences.`;
+        
+        // Direct secure link to your active Gemini 1.5 Flash brain layout
+        const targetKey = "AQ.Ab8RN6KR9vU17U6k2pJ5cX3bSOyqI8Qolxu3VNV_Q6A8phr_Mg";
+
+        const aiHook = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${targetKey}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            message: text,
-            bookingContext: lastGeneratedBookingCache 
+            contents: [
+              {
+                parts: [{ text: `${systemInstruction}\n\nCustomer Inquiry: ${text}` }]
+              }
+            ]
           })
         });
 
@@ -709,13 +717,18 @@
 
         const supportBubble = document.createElement('div');
         supportBubble.className = "bg-white border text-slate-700 p-3 rounded-xl max-w-[85%] mr-auto font-medium shadow-sm break-words leading-relaxed";
-        supportBubble.textContent = aiOutput.success ? aiOutput.reply : "Communication error with AI model processing layers.";
+        
+        if (aiOutput.candidates && aiOutput.candidates[0].content && aiOutput.candidates[0].content.parts[0].text) {
+          supportBubble.textContent = aiOutput.candidates[0].content.parts[0].text.trim();
+        } else {
+          supportBubble.textContent = "I received your message but encountered a formatting issue. What can I help you clear up?";
+        }
         
         liveChatLogContainer.appendChild(supportBubble);
         liveChatLogContainer.scrollTop = liveChatLogContainer.scrollHeight;
       } catch (err) {
-        console.error("Chat backend failure:", err);
-        loadingBubble.textContent = "Unable to connect to AI server node layers.";
+        console.error("Chat engine direct failure:", err);
+        loadingBubble.textContent = "Unable to connect to AI server network layers.";
       }
     }
 
