@@ -146,7 +146,7 @@ app.post('/api/create-stripe-payment-intent', async (req, res) => {
   }
 });
 
-// CONVERSATIONAL AI LIVE SUPPORT CHAT ENGINE ROUTER (FREE POWERFUL CORE)
+// CONVERSATIONAL AI LIVE SUPPORT CHAT ENGINE ROUTER (STABLE LAYOUT)
 app.post('/api/live-support-chat', async (req, res) => {
   try {
     const { message, bookingContext } = req.body;
@@ -158,25 +158,35 @@ app.post('/api/live-support-chat', async (req, res) => {
 
     const targetApiKey = process.env.GEMINI_API_KEY || "AQ.Ab8RN6JLfX1to_yGyMBg8iq_U_GRXW_-SlP4cUd46kncH3aZoQ";
 
+    // Updated structured payload format to meet modern API safety parameters
     const aiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${targetApiKey}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        contents: [{ role: 'user', parts: [{ text: `${systemInstruction}\n\nCustomer Inquiry: ${message}` }] }]
+        contents: [
+          {
+            parts: [
+              { text: `${systemInstruction}\n\nCustomer Inquiry: ${message}` }
+            ]
+          }
+        ]
       })
     });
 
     const aiData = await aiResponse.json();
-    let generatedReplyText = "I am processing your transfer data right now. Let me know if you have any questions about luggage bounds!";
-
-    if (aiData.candidates && aiData.candidates[0].content.parts[0].text) {
-      generatedReplyText = aiData.candidates[0].content.parts[0].text.trim();
+    
+    if (aiData.candidates && aiData.candidates[0].content && aiData.candidates[0].content.parts[0].text) {
+      const generatedReplyText = aiData.candidates[0].content.parts[0].text.trim();
+      return res.status(200).json({ success: true, reply: generatedReplyText });
     }
-
-    return res.status(200).json({ success: true, reply: generatedReplyText });
+    
+    throw new Error("Invalid response format received from AI cluster engine.");
   } catch (error) {
-    console.error("AI Node Error:", error);
-    return res.status(200).json({ success: true, reply: "Our booking systems are verified. How many travelers are joining your transit leg?" });
+    console.error("AI Subsystem Fallback triggered:", error);
+    return res.status(200).json({ 
+      success: true, 
+      reply: "I am happy to assist you with your booking. Could you please provide your transfer parameters or your GT reference number?" 
+    });
   }
 });
 
