@@ -700,13 +700,17 @@
         // Direct secure link to your active Gemini 1.5 Flash brain layout
         const targetKey = "AQ.Ab8RN6KR9vU17U6k2pJ5cX3bSOyqI8Qolxu3VNV_Q6A8phr_Mg";
 
-        const aiHook = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${targetKey}`, {
+      const aiHook = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${targetKey}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             contents: [
               {
-                parts: [{ text: `${systemInstruction}\n\nCustomer Inquiry: ${text}` }]
+                role: "user",
+                parts: [
+                  { text: systemInstruction },
+                  { text: `Customer Inquiry: ${text}` }
+                ]
               }
             ]
           })
