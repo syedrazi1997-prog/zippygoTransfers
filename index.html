@@ -629,8 +629,9 @@
             liveChatLogContainer.appendChild(loadingBubble);
             liveChatLogContainer.scrollTop = liveChatLogContainer.scrollHeight;
 
-            try {
-                const systemInstruction = `You are the official Zippygo Live Chat AI Support Agent. Be polite, concise, professional, and helpful. Assist the customer with airport transit rules, booking modifications, luggage options, and pricing questions. If the customer asks about an active booking, refer to this local data context if present: ${JSON.stringify(lastGeneratedBookingCache || {})}. Keep answers under 3 sentences.`;
+           try {
+                // Changed the variable name to systemRules to avoid naming conflicts
+                const systemRules = `You are the official Zippygo Live Chat AI Support Agent. Be polite, concise, professional, and helpful. Assist the customer with airport transit rules, booking modifications, luggage options, and pricing questions. If the customer asks about an active booking, refer to this local data context if present: ${JSON.stringify(lastGeneratedBookingCache || {})}. Keep answers under 3 sentences.`;
                 const targetKey = "AQ.Ab8RN6KR9vU17U6k2pJ5cX3bSOyqI8Qolxu3VNV_Q6A8phr_Mg";
 
                 const aiHook = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${targetKey}`, {
@@ -644,7 +645,7 @@
                             }
                         ],
                         systemInstruction: {
-                            parts: [{ text: systemInstruction }]
+                            parts: [{ text: systemRules }]
                         }
                     })
                 });
