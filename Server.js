@@ -54,6 +54,7 @@ app.post('/api/send-confirmation-email', async (req, res) => {
     if (!order.email) {
       return res.status(400).json({ success: false, message: "Missing recipient email address." });
     }
+
     const emailLayout = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; border: 1px solid #e2e8f0; padding: 24px; border-radius: 16px;">
         <h2 style="color: #10b981; margin-bottom: 4px;">Zippygo Booking Confirmed!</h2>
@@ -66,12 +67,14 @@ app.post('/api/send-confirmation-email', async (req, res) => {
         <p><strong>Total Price:</strong> ${order.currency}${order.price}</p>
       </div>
     `;
+
     const mailOptions = {
       from: '"Zippygo Transfers" <bookings@zippygotransfers.com>',
       to: order.email,
       subject: `Booking Confirmed: ${order.id} - Zippygo`,
       html: emailLayout
     };
+
     await mailTransport.sendMail(mailOptions);
     return res.status(200).json({ success: true, message: "Receipt sent successfully!" });
   } catch (error) {
@@ -84,10 +87,9 @@ app.post('/api/send-confirmation-email', async (req, res) => {
 app.post('/api/search-transfers', async (req, res) => {
   try {
     const { airport, destination, tripType, passengers } = req.body;
-    const paxCount = parseInt(passengers) || 2; 
-
-    const perPassengerShuttleBase = Math.floor(Math.random() * (18 - 12 + 1)) + 12; 
-    const perPassengerPrivateBase = Math.floor(Math.random() * (35 - 25 + 1)) + 25; 
+    const paxCount = parseInt(passengers) || 2;
+    const perPassengerShuttleBase = Math.floor(Math.random() * (18 - 12 + 1)) + 12;
+    const perPassengerPrivateBase = Math.floor(Math.random() * (35 - 25 + 1)) + 25;
 
     let totalShuttlePrice = perPassengerShuttleBase * paxCount;
     let totalPrivatePrice = perPassengerPrivateBase * paxCount;
@@ -111,8 +113,8 @@ app.post('/api/search-transfers', async (req, res) => {
       }
     ];
 
-    return res.status(200).json({ 
-      success: true, 
+    return res.status(200).json({
+      success: true,
       options: dynamicDeals,
       message: "Dynamic transfer rates calculated for passenger volumes."
     });
@@ -143,6 +145,7 @@ app.post('/api/create-stripe-payment-intent', async (req, res) => {
     return res.status(500).json({ success: false, message: error.message });
   }
 });
+
 // CONVERSATIONAL AI LIVE SUPPORT CHAT ENGINE ROUTER (FREE POWERFUL CORE)
 app.post('/api/live-support-chat', async (req, res) => {
   try {
@@ -151,25 +154,24 @@ app.post('/api/live-support-chat', async (req, res) => {
       return res.status(400).json({ success: false, message: "Empty message payload tokens." });
     }
 
-    // System prompt framing the AI model precisely as your Zippygo Transfers customer support agent
-    const systemInstruction = `You are the official Zippygo Live Chat AI Support Agent. 
-    Be polite, concise, professional, and helpful. 
-    Assist the customer with airport transit rules, booking modifications, luggage options, and pricing questions.
-    If the customer asks about an active booking, refer to this local data context if present: ${JSON.stringify(bookingContext || {})}.
-    Do not make up information outside of airport transfer policies. Keep answers under 3 sentences.`;
+    const systemInstruction = `You are the official Zippygo Live Chat AI Support Agent. Be polite, concise, professional, and helpful. Assist the customer with airport transit rules, booking modifications, luggage options, and pricing questions. If the customer asks about an active booking, refer to this local data context if present: ${JSON.stringify(bookingContext || {})}. Do not make up information outside of airport transfer policies. Keep answers under 3 sentences.`;
 
-    // Fetching the dynamic completion safely from a fast, unmetered public processing cluster
-    const aiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API_KEY || 'AIzaSy' + 'A-MOCK-ROUTER-TOKEN-KEY'}`, {
+    const aiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API_KEY || ''}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        contents: [{ role: 'user', parts: [{ text: `${systemInstruction}\n\nCustomer Inquiry: ${message}` }] }]
+        contents: [
+          {
+            role: 'user',
+            parts: [{ text: `${systemInstruction}\n\nCustomer Inquiry: ${message}` }]
+          }
+        ]
       })
     });
 
     const aiData = await aiResponse.json();
     let generatedReplyText = "I'm having trouble accessing my communication layers right now. Please message back shortly!";
-    
+
     if (aiData.candidates && aiData.candidates[0].content.parts[0].text) {
       generatedReplyText = aiData.candidates[0].content.parts[0].text.trim();
     }
