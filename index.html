@@ -107,7 +107,9 @@
                 </div>
 
                 <div class="mt-8">
-                    <button type="button" id="triggerSearchActionBtn" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-black py-4 rounded-2xl shadow-lg transition tracking-wide text-sm uppercase"> Find Best Deals → </button>
+                    <button type="button" id="triggerSearchActionBtn" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-black py-4 rounded-2xl shadow-lg transition tracking-wide text-sm uppercase">
+                        Find Best Deals →
+                    </button>
                 </div>
             </form>
         </div>
@@ -247,7 +249,9 @@
                 <button id="minimizeChatWidgetBtn" class="text-slate-400 hover:text-white text-xs">✕</button>
             </div>
             <div id="liveChatLogContainer" class="flex-1 p-4 overflow-y-auto text-xs space-y-3 bg-slate-50">
-                <div class="bg-white border text-slate-700 p-3 rounded-xl max-w-[85%] mr-auto font-medium shadow-sm leading-relaxed"> 👋 Hello! I am your AI assistant, powered by conversational software layers. Ask me anything about routes, fleet availability, or details of your current transfer! </div>
+                <div class="bg-white border text-slate-700 p-3 rounded-xl max-w-[85%] mr-auto font-medium shadow-sm leading-relaxed">
+                    👋 Hello! I am your AI assistant. Ask me anything about routes, fleet availability, or details of your transfer!
+                </div>
             </div>
             <div class="p-3 border-t bg-white flex items-center space-x-2">
                 <input type="text" id="liveChatMessageInput" placeholder="Ask your booking inquiry..." class="flex-1 p-2.5 border text-xs rounded-xl focus:outline-none bg-slate-50 font-medium focus:border-slate-300">
@@ -403,22 +407,22 @@
             const section = document.getElementById('searchResultsSection');
             const heading = document.getElementById('resultsHeaderTitle');
             const tripType = document.querySelector('input[name="tripType"]:checked').value;
-            
+
             if (!airIn.value && !destIn.value) {
                 alert("Please provide either an arrival airport or hotel destination.");
                 return;
             }
-            
+
             document.getElementById('heroHeaderContextArea').classList.remove('hidden');
             document.getElementById('bookingSearchFormMasterCard').classList.remove('hidden');
             document.getElementById('successReceiptSection').classList.add('hidden');
             target.innerHTML = '<div class="text-center py-6 text-slate-400 font-medium animate-pulse">Aggregating live rates from server databases...</div>';
             section.classList.remove('hidden');
-            
+
             const cleanAir = airIn.value ? airIn.value.split(',')[0].trim() : "Specified Location";
             const cleanDest = destIn.value ? destIn.value.split(',')[0].trim() : "Specified Location";
             heading.textContent = tripType === 'return' ? 'Available Return Transfer Options' : 'Available One Way Transfer Options';
-            
+
             fetch('https://zippygotransfersbackend.onrender.com/api/search-transfers', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -441,7 +445,7 @@
                                 <p class="flex items-center text-blue-600">🛬 Return Leg: ${cleanDest} &rarr; ${cleanAir}</p>
                             </div>` : 
                             `<div class="text-xs font-bold text-emerald-600">🛫 One-Way Route: ${cleanAir} &rarr; ${cleanDest}</div>`;
-                        
+
                         const card = document.createElement('div');
                         card.className = "bg-white rounded-xl border p-6 flex flex-col md:flex-row items-stretch justify-between shadow-md hover:border-emerald-500 transition gap-4 text-left";
                         card.innerHTML = `
@@ -455,12 +459,14 @@
                             <div class="text-center md:text-right bg-slate-50 p-5 rounded-xl border min-w-[220px] flex flex-col justify-center">
                                 <span class="text-xs text-gray-400 block font-medium">Total Price</span>
                                 <p class="text-4xl font-black text-slate-900">${activeCurrencySymbol}${convertedPrice}</p>
-                                <button type="button" class="book-transfer-action-trigger mt-3 w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-2.5 rounded-xl text-xs transition shadow-md" data-title="${deal.vehicle}" data-price="${convertedPrice}"> Book This Transfer </button>
+                                <button type="button" class="book-transfer-action-trigger mt-3 w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-2.5 rounded-xl text-xs transition shadow-md" data-title="${deal.vehicle}" data-price="${convertedPrice}">
+                                    Book This Transfer
+                                </button>
                             </div>
                         `;
                         target.appendChild(card);
                     });
-                    
+
                     document.querySelectorAll('.book-transfer-action-trigger').forEach(btn => {
                         btn.addEventListener('click', function() {
                             selectedVehicleTitle = this.getAttribute('data-title').trim();
@@ -491,7 +497,7 @@
             payButton.disabled = true;
             payButton.textContent = "Processing Payment Security Layers...";
             errorDisplay.classList.add('hidden');
-            
+
             const firstName = document.getElementById('custFirstName').value.trim();
             const lastName = document.getElementById('custLastName').value.trim();
             const email = document.getElementById('custEmail').value.trim();
@@ -499,7 +505,7 @@
             const flight = document.getElementById('flightNo').value.trim().toUpperCase();
             const finalCalculatedCost = parseFloat(selectedVehiclePrice);
             const activeCurrencyCode = currencySelector.value;
-            
+
             try {
                 const response = await fetch('https://zippygotransfersbackend.onrender.com/api/create-stripe-payment-intent', {
                     method: 'POST',
@@ -507,34 +513,47 @@
                     body: JSON.stringify({ amount: finalCalculatedCost, currency: activeCurrencyCode })
                 });
                 const orderData = await response.json();
-                if (!orderData.success) { throw new Error(orderData.message || "Gateway token transaction failed."); }
-                
+                if (!orderData.success) {
+                    throw new Error(orderData.message || "Gateway token transaction failed.");
+                }
+
                 const result = await stripe.confirmCardPayment(orderData.clientSecret, {
                     payment_method: {
                         card: cardElement,
                         billing_details: { name: `${firstName} ${lastName}`, email: email, phone: phone }
                     }
                 });
-                
-                if (result.error) { throw new Error(result.error.message); }
-                
+
+                if (result.error) {
+                    throw new Error(result.error.message);
+                }
+
                 if (result.paymentIntent) {
                     const bookingRef = "GT-" + Math.floor(100000 + Math.random() * 900000);
                     const orderRecord = {
-                        id: bookingRef, firstName: firstName, lastName: lastName, email: email, phone: phone,
-                        flight: flight, vehicle: selectedVehicleTitle, price: selectedVehiclePrice, currency: activeCurrencySymbol,
-                        from: airIn.value || "Not Specified", to: destIn.value || "Not Specified",
-                        status: "Confirmed & Paid via Stripe Secure Core", paymentId: result.paymentIntent.id || "PI-MOCK-RESERVE",
+                        id: bookingRef,
+                        firstName: firstName,
+                        lastName: lastName,
+                        email: email,
+                        phone: phone,
+                        flight: flight,
+                        vehicle: selectedVehicleTitle,
+                        price: selectedVehiclePrice,
+                        currency: activeCurrencySymbol,
+                        from: airIn.value || "Not Specified",
+                        to: destIn.value || "Not Specified",
+                        status: "Confirmed & Paid via Stripe Secure Core",
+                        paymentId: result.paymentIntent.id || "PI-MOCK-RESERVE",
                         timestamp: new Date().toLocaleDateString()
                     };
-                    
+
                     lastGeneratedBookingCache = orderRecord;
                     localStorage.setItem(bookingRef.toUpperCase(), JSON.stringify(orderRecord));
-                    
+
                     checkoutModal.classList.add('hidden');
                     cardElement.clear();
                     document.getElementById('checkoutCombinedForm').reset();
-                    
+
                     document.getElementById('receiptBookingId').textContent = orderRecord.id;
                     document.getElementById('receiptVehicleTitle').textContent = `${orderRecord.vehicle} (${orderRecord.from} ➔ ${orderRecord.to})`;
                     document.getElementById('receiptPassengerName').textContent = `${orderRecord.firstName} ${orderRecord.lastName}`;
@@ -542,13 +561,13 @@
                     document.getElementById('receiptFlightNo').textContent = orderRecord.flight;
                     document.getElementById('receiptPaymentId').textContent = orderRecord.paymentId;
                     document.getElementById('receiptFinalPrice').textContent = `${orderRecord.currency}${orderRecord.price}`;
-                    
+
                     document.getElementById('heroHeaderContextArea').classList.add('hidden');
                     document.getElementById('bookingSearchFormMasterCard').classList.add('hidden');
                     document.getElementById('searchResultsSection').classList.add('hidden');
                     document.getElementById('successReceiptSection').classList.remove('hidden');
                     document.getElementById('successReceiptSection').scrollIntoView({ behavior: 'smooth' });
-                    
+
                     fetch('https://zippygotransfersbackend.onrender.com/api/send-confirmation-email', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -577,11 +596,12 @@
             const searchId = document.getElementById('searchBookingId').value.trim().toUpperCase();
             const searchEmail = document.getElementById('searchBookingEmail').value.trim().toLowerCase();
             bookingLookupResponseTarget.classList.remove('hidden');
-            
+
             if (!searchId || !searchEmail) {
                 bookingLookupResponseTarget.innerHTML = '<p class="text-rose-500 font-bold text-xs">⚠️ Please supply both reference index and profile email values.</p>';
                 return;
             }
+
             const localRecord = localStorage.getItem(searchId);
             if (localRecord) {
                 const data = JSON.parse(localRecord);
@@ -609,69 +629,64 @@
         });
         minimizeChatWidgetBtn.addEventListener('click', () => liveChatWidgetContainer.classList.add('hidden'));
 
-        // CONNECTS FRONTEND CHAT PANEL DIRECTLY TO AI CORE COMPLETION LAYER
+        // CONNECTS FRONTEND CHAT PANEL DIRECTLY TO SECURE ROUTED BACKEND AI ENGINE
         async function appendLiveSupportChatMessage() {
             const text = liveChatMessageInput.value.trim();
             if (!text) return;
 
-            // Add user message to layout panel
+            // Render human message bubble
             const userBubble = document.createElement('div');
             userBubble.className = "bg-emerald-500 text-white p-3 rounded-xl max-w-[85%] ml-auto font-medium shadow-sm text-right break-words leading-relaxed";
             userBubble.textContent = text;
             liveChatLogContainer.appendChild(userBubble);
+            
             liveChatMessageInput.value = '';
             liveChatLogContainer.scrollTop = liveChatLogContainer.scrollHeight;
 
-            // Add loading state bubble
+            // Render typewriter placeholder
             const loadingBubble = document.createElement('div');
             loadingBubble.className = "bg-white border text-slate-400 p-3 rounded-xl max-w-[85%] mr-auto font-medium shadow-sm animate-pulse";
-            loadingBubble.textContent = "AI is typing answers...";
+            loadingBubble.textContent = "Support Agent is typing...";
             liveChatLogContainer.appendChild(loadingBubble);
             liveChatLogContainer.scrollTop = liveChatLogContainer.scrollHeight;
 
-           try {
-                // Changed the variable name to systemRules to avoid naming conflicts
-                const systemRules = `You are the official Zippygo Live Chat AI Support Agent. Be polite, concise, professional, and helpful. Assist the customer with airport transit rules, booking modifications, luggage options, and pricing questions. If the customer asks about an active booking, refer to this local data context if present: ${JSON.stringify(lastGeneratedBookingCache || {})}. Keep answers under 3 sentences.`;
-                const targetKey = "AQ.Ab8RN6KR9vU17U6k2pJ5cX3bSOyqI8Qolxu3VNV_Q6A8phr_Mg";
-
-                const aiHook = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${targetKey}`, {
+            try {
+                // Point request token to secure Express Backend engine 
+                const response = await fetch('https://zippygotransfersbackend.onrender.com/api/live-support-chat', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        contents: [
-                            {
-                                role: "user",
-                                parts: [{ text: `Customer Inquiry: ${text}` }]
-                            }
-                        ],
-                        systemInstruction: {
-                            parts: [{ text: systemRules }]
-                        }
+                    body: JSON.stringify({ 
+                        message: text,
+                        bookingContext: lastGeneratedBookingCache
                     })
                 });
 
-                const aiOutput = await aiHook.json();
+                const data = await response.json();
                 loadingBubble.remove();
 
                 const supportBubble = document.createElement('div');
                 supportBubble.className = "bg-white border text-slate-700 p-3 rounded-xl max-w-[85%] mr-auto font-medium shadow-sm break-words leading-relaxed";
-
-                if (aiOutput.candidates && aiOutput.candidates[0].content && aiOutput.candidates[0].content.parts[0].text) {
-                    supportBubble.textContent = aiOutput.candidates[0].content.parts[0].text.trim();
+                
+                if (data.success && data.reply) {
+                    supportBubble.textContent = data.reply;
                 } else {
-                    supportBubble.textContent = "I am processing your transfer data right now. Let me know if you have any questions about luggage parameters or fleet options!";
+                    supportBubble.textContent = "I'm here to help you coordinate your airport transfer parameters. Do you have any specific inquiries regarding our vehicle fleet options or luggage rules?";
                 }
 
                 liveChatLogContainer.appendChild(supportBubble);
                 liveChatLogContainer.scrollTop = liveChatLogContainer.scrollHeight;
+
             } catch (err) {
-                console.error("Chat engine direct failure:", err);
-                loadingBubble.textContent = "Unable to connect to AI server network layers.";
+                console.error("Upstream route communication down:", err);
+                loadingBubble.textContent = "Network error. Please verify database connection layers.";
+                loadingBubble.className = "bg-rose-50 border border-rose-200 text-rose-600 p-3 rounded-xl max-w-[85%] mr-auto font-medium";
             }
         }
 
         sendLiveChatMessageBtn.addEventListener('click', appendLiveSupportChatMessage);
-        liveChatMessageInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') appendLiveSupportChatMessage(); });
+        liveChatMessageInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') appendLiveSupportChatMessage();
+        });
     </script>
 </body>
 </html>
