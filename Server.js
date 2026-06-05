@@ -147,7 +147,7 @@ app.post('/api/live-support-chat', async (req, res) => {
 
         const systemInstruction = `You are the official Zippygo Live Chat AI Support Agent. Be polite, concise, professional, and helpful. Assist the customer with airport transit rules, booking modifications, luggage options, and pricing questions. If the customer asks about an active booking, refer to this local data context if present: ${JSON.stringify(bookingContext || {})}. Keep answers under 3 sentences.`;
         
-        const targetApiKey = process.env.GEMINI_API_KEY || "AQ.Ab8RN6JLfX1to_yGyMBg8iq_U_GRXW_-SlP4cUd46kncH3aZoQ";
+        const targetApiKey = process.env.GEMINI_API_KEY || "AQ.Ab8RN6KoYXmdCg-0DFdR7QCNNn6j6fs_MapF_TvgjXpABwVouA";
 
         // Corrected payload format targeting the generative content endpoint properly
         const aiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${targetApiKey}`, {
