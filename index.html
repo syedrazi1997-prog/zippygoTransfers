@@ -629,64 +629,64 @@
         });
         minimizeChatWidgetBtn.addEventListener('click', () => liveChatWidgetContainer.classList.add('hidden'));
 
-        // CONNECTS FRONTEND CHAT PANEL DIRECTLY TO SECURE ROUTED BACKEND AI ENGINE
-        async function appendLiveSupportChatMessage() {
-            const text = liveChatMessageInput.value.trim();
-            if (!text) return;
+       // CONNECTS FRONTEND CHAT PANEL DIRECTLY TO SECURE ROUTED BACKEND AI ENGINE
+async function appendLiveSupportChatMessage() {
+    const text = liveChatMessageInput.value.trim();
+    if (!text) return;
 
-            // Render human message bubble
-            const userBubble = document.createElement('div');
-            userBubble.className = "bg-emerald-500 text-white p-3 rounded-xl max-w-[85%] ml-auto font-medium shadow-sm text-right break-words leading-relaxed";
-            userBubble.textContent = text;
-            liveChatLogContainer.appendChild(userBubble);
-            
-            liveChatMessageInput.value = '';
-            liveChatLogContainer.scrollTop = liveChatLogContainer.scrollHeight;
+    // Render human message bubble
+    const userBubble = document.createElement('div');
+    userBubble.className = "bg-emerald-500 text-white p-3 rounded-xl max-w-[85%] ml-auto font-medium shadow-sm text-right break-words leading-relaxed";
+    userBubble.textContent = text;
+    liveChatLogContainer.appendChild(userBubble);
+    liveChatMessageInput.value = '';
+    liveChatLogContainer.scrollTop = liveChatLogContainer.scrollHeight;
 
-            // Render typewriter placeholder
-            const loadingBubble = document.createElement('div');
-            loadingBubble.className = "bg-white border text-slate-400 p-3 rounded-xl max-w-[85%] mr-auto font-medium shadow-sm animate-pulse";
-            loadingBubble.textContent = "Support Agent is typing...";
-            liveChatLogContainer.appendChild(loadingBubble);
-            liveChatLogContainer.scrollTop = liveChatLogContainer.scrollHeight;
+    // Render typewriter placeholder
+    const loadingBubble = document.createElement('div');
+    loadingBubble.className = "bg-white border text-slate-400 p-3 rounded-xl max-w-[85%] mr-auto font-medium shadow-sm animate-pulse";
+    loadingBubble.textContent = "Support Agent is typing...";
+    liveChatLogContainer.appendChild(loadingBubble);
+    liveChatLogContainer.scrollTop = liveChatLogContainer.scrollHeight;
 
-            try {
-                // Point request token to secure Express Backend engine 
-                const response = await fetch('https://zippygotransfersbackend.onrender.com/api/live-support-chat', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                        message: text,
-                        bookingContext: lastGeneratedBookingCache
-                    })
-                });
-
-                const data = await response.json();
-                loadingBubble.remove();
-
-                const supportBubble = document.createElement('div');
-                supportBubble.className = "bg-white border text-slate-700 p-3 rounded-xl max-w-[85%] mr-auto font-medium shadow-sm break-words leading-relaxed";
-                
-                if (data.success && data.reply) {
-                    supportBubble.textContent = data.reply;
-                } else {
-                    supportBubble.textContent = "I'm here to help you coordinate your airport transfer parameters. Do you have any specific inquiries regarding our vehicle fleet options or luggage rules?";
-                }
-
-                liveChatLogContainer.appendChild(supportBubble);
-                liveChatLogContainer.scrollTop = liveChatLogContainer.scrollHeight;
-
-            } catch (err) {
-                console.error("Upstream route communication down:", err);
-                loadingBubble.textContent = "Network error. Please verify database connection layers.";
-                loadingBubble.className = "bg-rose-50 border border-rose-200 text-rose-600 p-3 rounded-xl max-w-[85%] mr-auto font-medium";
-            }
-        }
-
-        sendLiveChatMessageBtn.addEventListener('click', appendLiveSupportChatMessage);
-        liveChatMessageInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') appendLiveSupportChatMessage();
+    try {
+        // Point request token to secure Express Backend engine
+        const response = await fetch('https://zippygotransfersbackend.onrender.com/api/live-support-chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                message: text,
+                bookingContext: lastGeneratedBookingCache
+            })
         });
+        
+        const data = await response.json();
+        loadingBubble.remove();
+
+        const supportBubble = document.createElement('div');
+        supportBubble.className = "bg-white border text-slate-700 p-3 rounded-xl max-w-[85%] mr-auto font-medium shadow-sm break-words leading-relaxed";
+        
+        if (data.success && data.reply) {
+            supportBubble.textContent = data.reply;
+        } else {
+            supportBubble.textContent = "I'm here to help you coordinate your airport transfer parameters. Do you have any specific inquiries regarding our vehicle fleet options or luggage rules?";
+        }
+        
+        liveChatLogContainer.appendChild(supportBubble);
+        liveChatLogContainer.scrollTop = liveChatLogContainer.scrollHeight;
+
+    } catch (err) {
+        console.error("Upstream route communication down:", err);
+        loadingBubble.textContent = "Network error. Please verify database connection layers.";
+        loadingBubble.className = "bg-rose-50 border border-rose-200 text-rose-600 p-3 rounded-xl max-w-[85%] mr-auto font-medium";
+    }
+}
+
+// Event Listeners for Chat Widget Actions
+sendLiveChatMessageBtn.addEventListener('click', appendLiveSupportChatMessage);
+liveChatMessageInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') appendLiveSupportChatMessage();
+});
     </script>
 </body>
 </html>
