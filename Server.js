@@ -139,44 +139,51 @@ app.post('/api/create-stripe-payment-intent', async (req, res) => {
 
 // CONVERSATIONAL AI LIVE SUPPORT CHAT ENGINE ROUTER (FIXED & FULLY FUNCTIONAL)
 app.post('/api/live-support-chat', async (req, res) => {
-    try {
-        const { message, bookingContext } = req.body;
-        if (!message) {
-            return res.status(400).json({ success: false, message: "Empty message tokens." });
-        }
-
-        const systemInstruction = `You are the official Zippygo Live Chat AI Support Agent. Be polite, concise, professional, and helpful. Assist the customer with airport transit rules, booking modifications, luggage options, and pricing questions. If the customer asks about an active booking, refer to this local data context if present: ${JSON.stringify(bookingContext || {})}. Keep answers under 3 sentences.`;
-        
-        const targetApiKey = process.env.GEMINI_API_KEY || "AQ.Ab8RN6KoYXmdCg-0DFdR7QCNNn6j6fs_MapF_TvgjXpABwVouA";
-
-        // Corrected payload format targeting the generative content endpoint properly
-        const aiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${targetApiKey}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                contents: [{
-                    parts: [{ text: `${systemInstruction}\n\nCustomer Inquiry: ${message}` }]
-                }]
-            })
-        });
-
-        const aiData = await aiResponse.json();
-
-        // Safe extraction layer verifying model return fields before formatting delivery
-        if (aiData.candidates && aiData.candidates[0].content && aiData.candidates[0].content.parts[0].text) {
-            const generatedReplyText = aiData.candidates[0].content.parts[0].text.trim();
-            return res.status(200).json({ success: true, reply: generatedReplyText });
-        }
-        
-        throw new Error("Invalid response structural signature returned from upstream API clusters.");
-    } catch (error) {
-        console.error("AI Subsystem Fallback triggered:", error);
-        return res.status(200).json({ 
-            success: true, 
-            reply: "I am happy to assist you with your booking. Could you please provide your transfer parameters or your reference number?" 
-        });
+  try {
+    const { message, bookingContext } = req.body;
+    if (!message) {
+      return res.status(400).json({ success: false, message: "Empty message tokens." });
     }
-});
 
+    // Define clear rules for the AI
+    const systemInstruction = `You are the official Zippygo Live Chat AI Support Agent. Be polite, concise, professional, and helpful. Assist the customer with airport transit rules, booking modifications, luggage options, and pricing questions. If the customer asks about an active booking, refer to this local data context if present: ${JSON.stringify(bookingContext || {})}. Keep answers under 3 sentences.`;
+
+    // Always prioritize the environment variable for safety
+    const targetApiKey = process.env.GEMINI_API_KEY || "AQ.Ab8RN6KoYXmdCg-0DFdR7QCNNn6j6fs_MapF_TvgjXpABwVouA";
+
+    // CORRECTED: System instructions passed properly via the config query layer
+    const aiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${targetApiKey}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [
+          {
+            role: "user",
+            parts: [{ text: message }]
+          }
+        ],
+        systemInstruction: {
+          parts: [{ text: systemInstruction }]
+        }
+      })
+    });
+
+    const aiData = await aiResponse.json();
+
+    // Check if Gemini returned a valid text response
+    if (aiData.candidates && aiData.candidates[0].content && aiData.candidates[0].content.parts[0].text) {
+      const generatedReplyText = aiData.candidates[0].content.parts[0].text.trim();
+      return res.status(200).json({ success: true, reply: generatedReplyText });
+    }
+    
+    throw new Error("Invalid response structural signature returned from upstream API clusters.");
+  } catch (error) {
+    console.error("AI Subsystem Fallback triggered:", error);
+    return res.status(200).json({
+      success: true,
+      reply: "I am having trouble processing that right now. Please provide your booking parameters so I can look that up manually."
+    });
+  }
+});
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Server executing seamlessly on port ${PORT}`));
