@@ -129,6 +129,7 @@ app.post('/api/create-stripe-payment-intent', async (req, res) => {
       amount: calculatedSubunitAmount,
       currency: currency.toLowerCase(),
       automatic_payment_methods: { enabled: true }
+      receipt_email: customerEmail,
     });
 
     return res.status(200).json({ success: true, clientSecret: paymentIntent.client_secret });
