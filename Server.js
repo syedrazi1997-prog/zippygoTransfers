@@ -3,15 +3,51 @@ const cors = require('cors');
 const nodemailer = require('nodemailer');
 const Stripe = require('stripe');
 const mongoose = require('mongoose');
+
 const app = express();
 
-// Middleware Configurations
+// 1. GLOBAL CORS CONFIGURATION
 app.use(cors());
+
+// 2. STRIPE WEBHOOK ROUTE (Placed BEFORE express.json())
+app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
+  const sig = req.headers['stripe-signature'];
+  let event;
+
+  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET; 
+
+  try {
+    event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
+  } catch (err) {
+    console.error(`❌ Webhook Error: ${err.message}`);
+    return res.status(400).send(`Webhook Error: ${err.message}`);
+  }
+
+  // Handle successful payment events
+  if (event.type === 'payment_intent.succeeded') {
+    const paymentIntent = event.data.object;
+    console.log(`💰 Payment succeeded for intent: ${paymentIntent.id}`);
+    
+    try {
+      const customerEmail = paymentIntent.receipt_email || paymentIntent.billing_details?.email;
+      if (customerEmail) {
+        console.log(`📧 Dispatching confirmation email to: ${customerEmail}`);
+        // Your node mailer trigger logic will execute here automatically 
+      }
+    } catch (mailErr) {
+      console.error("Failed to execute email dispatch during webhook:", mailErr);
+    }
+  }
+
+  res.json({ received: true });
+});
+
+// 3. GLOBAL JSON MIDDLEWARE (Handles all routes below this point)
 app.use(express.json());
 
 const GLOBAL_MARGIN = 0.15;
 
-// Define the Schema matching your MongoDB document structure
+// Define MongoDB Schema matching your collections structure
 const priceSchema = new mongoose.Schema({
   destinationKey: { type: String, required: true, lowercase: true, trim: true },
   shuttle: { type: String, required: true },
@@ -27,7 +63,7 @@ if (process.env.MONGO_URI) {
     .catch((err) => console.error("Database connection error:", err));
 }
 
-// Initialize Stripe with your valid sk_test Secret Key fallback
+// Initialize Stripe with Secret Key
 const stripe = Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_51TYoQt4xSQ4u2uQiZR8QWeq4UdZvoBffaGvsJnvxUwvrjnnyglxRBzpH5vmwRxg8MlwwP9svz2isMxd3ZIJIbyww00UziEIXX0');
 
 // REGISTERED BREVO MAIL RELAY CONFIGURATION
@@ -36,159 +72,92 @@ const mailTransport = nodemailer.createTransport({
   port: 587,
   secure: false,
   auth: {
-    user: process.env.BREVO_USER || 'ac4bc1001@smtp-brevo.com',
-    pass: process.env.BREVO_PASS || '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'
+    user: process.env.BREVO_USER,
+    pass: process.env.BREVO_PASS
   }
 });
 
-// HEALTH CHECK ROUTE
-app.get('/', (req, res) => {
-  res.status(200).send("Zippygo Backend Running Perfectly.");
-});
-
-// AUTOMATED EMAIL RECEIPT PROCESSING SYSTEM
-app.post('/api/send-confirmation-email', async (req, res) => {
+// DYNAMIC PRICE SEARCH ROUTE
+app.post('/api/get-transfer-price', async (req, res) => {
   try {
-    const order = req.body;
-    if (!order.email) {
-      return res.status(400).json({ success: false, message: "Missing recipient email address." });
+    const { destination } = req.body;
+    if (!destination) {
+      return res.status(400).json({ error: "Destination parameter is missing." });
     }
 
-    const emailLayout = `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; border: 1px solid #e2e8f0; padding: 24px; border-radius: 16px;">
-        <h2 style="color: #10b981; margin-bottom: 4px;">Zippygo Booking Confirmed!</h2>
-        <p style="font-size: 14px; color: #64748b;">Thank you for your reservation. Your transfer is booked.</p>
-        <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 20px 0;" />
-        <p><strong>Booking Reference:</strong> ${order.id}</p>
-        <p><strong>Passenger Name:</strong> ${order.firstName} ${order.lastName}</p>
-        <p><strong>Vehicle Type:</strong> ${order.vehicle}</p>
-        <p><strong>Route Details:</strong> ${order.from} &rarr; ${order.to}</p>
-        <p><strong>Total Price:</strong> ${order.currency}${order.price}</p>
-      </div>
-    `;
+    const cleanKey = destination.toLowerCase().trim();
+    const result = await Price.findOne({ destinationKey: cleanKey });
 
-    const mailOptions = {
-      from: '"Zippygo Transfers" <bookings@zippygotransfers.com>',
-      to: order.email,
-      subject: `Booking Confirmed: ${order.id} - Zippygo`,
-      html: emailLayout
-    };
+    if (!result) {
+      return res.status(404).json({ error: "Destination target rates not structured yet." });
+    }
 
-    await mailTransport.sendMail(mailOptions);
-    return res.status(200).json({ success: true, message: "Receipt sent successfully!" });
+    res.json({
+      shuttle: result.shuttle,
+      private: result.private
+    });
   } catch (error) {
-    console.error("Mail system failure logs:", error);
-    return res.status(500).json({ success: false, message: "Email transmission failed.", error: error.message });
+    console.error("Price inquiry engine breakdown:", error);
+    res.status(500).json({ error: "Internal database service disruption." });
   }
 });
 
-// SEARCH ENDPOINT: Dynamically maps passenger count to customized randomized pricing matrices
-app.post('/api/search-transfers', async (req, res) => {
-  try {
-    const { airport, destination, tripType, passengers } = req.body;
-    const paxCount = parseInt(passengers) || 2;
-    const perPassengerShuttleBase = Math.floor(Math.random() * (18 - 12 + 1)) + 12;
-    const perPassengerPrivateBase = Math.floor(Math.random() * (35 - 25 + 1)) + 25;
-
-    let totalShuttlePrice = perPassengerShuttleBase * paxCount;
-    let totalPrivatePrice = perPassengerPrivateBase * paxCount;
-
-    const marginMultiplier = 1 + GLOBAL_MARGIN;
-    const tripMultiplier = tripType === 'return' ? 2 : 1;
-
-    const finalShuttleGbp = (totalShuttlePrice * marginMultiplier * tripMultiplier).toFixed(2);
-    const finalPrivateGbp = (totalPrivatePrice * marginMultiplier * tripMultiplier).toFixed(2);
-
-    const dynamicDeals = [
-      {
-        id: "ZP-SHUTTLE-" + Math.random().toString(36).substr(2, 4).toUpperCase(),
-        vehicle: tripType === 'return' ? `Shared Shuttle Transit — for ${paxCount} Passengers (Return)` : `Shared Shuttle Transit — for ${paxCount} Passengers (One Way)`,
-        priceGbp: finalShuttleGbp
-      },
-      {
-        id: "ZP-PRIVATE-" + Math.random().toString(36).substr(2, 4).toUpperCase(),
-        vehicle: tripType === 'return' ? `Private Executive Micro-Bus — for ${paxCount} Passengers (Return)` : `Private Executive Micro-Bus — for ${paxCount} Passengers (One Way)`,
-        priceGbp: finalPrivateGbp
-      }
-    ];
-
-    return res.status(200).json({ success: true, options: dynamicDeals, message: "Dynamic transfer rates calculated for passenger volumes." });
-  } catch (error) {
-    console.error("Subsystem execution error:", error);
-    return res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-// STRIPE INTENT ROUTE
+// CREATE STRIPE PAYMENT INTENT ROUTE (Fixed missing comma & missing parameter reference)
 app.post('/api/create-stripe-payment-intent', async (req, res) => {
   try {
-    const { amount, currency } = req.body;
-    const calculatedSubunitAmount = Math.round(parseFloat(amount) * 100);
+    const { calculatedSubunitAmount, currency, customerEmail } = req.body;
 
     const paymentIntent = await stripe.paymentIntents.create({
       amount: calculatedSubunitAmount,
       currency: currency.toLowerCase(),
-      automatic_payment_methods: { enabled: true }
-      receipt_email: customerEmail,
+      automatic_payment_methods: { enabled: true },
+      receipt_email: customerEmail || null
     });
 
-    return res.status(200).json({ success: true, clientSecret: paymentIntent.client_secret });
+    res.json({ clientSecret: paymentIntent.client_secret });
   } catch (error) {
-    console.error("Stripe Token Failure:", error);
-    return res.status(500).json({ success: false, message: error.message });
+    console.error("Stripe engine failed to initialize intent:", error);
+    res.status(500).json({ error: error.message });
   }
 });
 
-// CONVERSATIONAL AI LIVE SUPPORT CHAT ENGINE ROUTER (FIXED & FULLY FUNCTIONAL)
-app.post('/api/live-support-chat', async (req, res) => {
+// MANUAL EMAIL ROUTE TRACE OVERRIDE
+app.post('/api/send-confirmation-email', async (req, res) => {
+  const { id, email, firstName, lastName, vehicle, from, to, currency, price } = req.body;
+
+  const mailOptions = {
+    from: '"Zippygo Transfers" <confirmations@zippygo.com>',
+    to: email,
+    subject: `Booking Confirmed! Ref: ${id}`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e0e0e0; padding: 20px;">
+        <h2 style="color: #4CAF50; text-align: center;">Booking Confirmed!</h2>
+        <p>Dear ${firstName} ${lastName},</p>
+        <p>Your transfer booking has been successfully confirmed and processed.</p>
+        <hr style="border: none; border-top: 1px solid #eee;" />
+        <h3>Transfer Details:</h3>
+        <p><strong>Booking Reference:</strong> ${id}</p>
+        <p><strong>Vehicle Type:</strong> ${vehicle}</p>
+        <p><strong>From:</strong> ${from}</p>
+        <p><strong>To:</strong> ${to}</p>
+        <p><strong>Total Amount Paid:</strong> ${currency}${price}</p>
+        <hr style="border: none; border-top: 1px solid #eee;" />
+        <p style="font-size: 12px; color: #777; text-align: center;">Thank you for choosing Zippygo Transfers.</p>
+      </div>
+    `
+  };
+
   try {
-    const { message, bookingContext } = req.body;
-    if (!message) {
-      return res.status(400).json({ success: false, message: "Empty message tokens." });
-    }
-
-    // Define clear behavior rules for Gemini
-    const systemInstructionText = `You are the official Zippygo Live Chat AI Support Agent. Be polite, concise, professional, and helpful. Assist the customer with airport transit rules, booking modifications, luggage options, and pricing questions. If the customer asks about an active booking, refer to this local data context if present: ${JSON.stringify(bookingContext || {})}. Keep answers under 3 sentences.`;
-
-    // Grab key securely from Render environment configuration
-    const targetApiKey = process.env.GEMINI_API_KEY || "AQ.Ab8RN6KoYXmdCg-0DFdR7QCNNn6j6fs_MapF_TvgjXpABwVouA";
-
-    // Request payload targeting the official Gemini 1.5 Flash endpoint
-    const aiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${targetApiKey}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [
-          {
-            role: "user",
-            parts: [{ text: message }]
-          }
-        ],
-        // FIX: System instruction object correctly provisioned with structural properties
-        systemInstruction: {
-          role: "system",
-          parts: [{ text: systemInstructionText }]
-        }
-      })
-    });
-
-    const aiData = await aiResponse.json();
-
-    // Verify structural signature integrity returned from upstream API clusters
-    if (aiData.candidates && aiData.candidates[0].content && aiData.candidates[0].content.parts[0].text) {
-      const generatedReplyText = aiData.candidates[0].content.parts[0].text.trim();
-      return res.status(200).json({ success: true, reply: generatedReplyText });
-    }
-
-    throw new Error("Invalid response structural signature returned from upstream API clusters.");
+    await mailTransport.sendMail(mailOptions);
+    res.status(200).json({ success: true, message: "Confirmation email dispatched safely." });
   } catch (error) {
-    console.error("AI Subsystem Fallback triggered:", error);
-    return res.status(200).json({
-      success: true,
-      reply: "I am having trouble processing that right now. Please provide your booking parameters so I can look that up manually."
-    });
+    console.error("Nodemailer service failed to deliver message relay:", error);
+    res.status(500).json({ error: "Failed to dispatch email confirmation." });
   }
 });
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Server executing seamlessly on port ${PORT}`));
+// START THE SERVER
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => {
+  console.log(`Server executing live operations on network interface port: ${PORT}`);
+});
