@@ -2,7 +2,6 @@ const express = require('express');
 const cors = require('cors');
 const nodemailer = require('nodemailer');
 const Stripe = require('stripe');
-const mongoose = require('mongoose');
 
 const app = express();
 
@@ -47,22 +46,6 @@ app.use(express.json());
 
 const GLOBAL_MARGIN = 0.15;
 
-// Define MongoDB Schema matching your collections structure
-const priceSchema = new mongoose.Schema({
-  destinationKey: { type: String, required: true, lowercase: true, trim: true },
-  shuttle: { type: String, required: true },
-  private: { type: String, required: true }
-});
-
-const Price = mongoose.model('Price', priceSchema, 'prices');
-
-// CONNECT TO MONGOOSE DATABASE
-if (process.env.MONGO_URI) {
-  mongoose.connect(process.env.MONGO_URI)
-    .then(() => console.log("MongoDB Database connected successfully!"))
-    .catch((err) => console.error("Database connection error:", err));
-}
-
 // Initialize Stripe with Secret Key
 const stripe = Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_51TYoQt4xSQ4u2uQiZR8QWeq4UdZvoBffaGvsJnvxUwvrjnnyglxRBzpH5vmwRxg8MlwwP9svz2isMxd3ZIJIbyww00UziEIXX0');
 
@@ -77,7 +60,7 @@ const mailTransport = nodemailer.createTransport({
   }
 });
 
-// DYNAMIC PRICE SEARCH ROUTE
+// DYNAMIC SEARCH ROUTE - GENERATES RANDOM PRICES instead of querying MongoDB
 app.post('/api/get-transfer-price', async (req, res) => {
   try {
     const { destination } = req.body;
@@ -85,24 +68,24 @@ app.post('/api/get-transfer-price', async (req, res) => {
       return res.status(400).json({ error: "Destination parameter is missing." });
     }
 
-    const cleanKey = destination.toLowerCase().trim();
-    const result = await Price.findOne({ destinationKey: cleanKey });
+    // Generate random mock prices for testing
+    // Math.random() * (max - min) + min
+    const randomShuttlePrice = (Math.random() * (45 - 15) + 15).toFixed(2);
+    const randomPrivatePrice = (Math.random() * (120 - 60) + 60).toFixed(2);
 
-    if (!result) {
-      return res.status(404).json({ error: "Destination target rates not structured yet." });
-    }
+    console.log(`Generated random prices for ${destination}: Shuttle = £${randomShuttlePrice}, Private = £${randomPrivatePrice}`);
 
     res.json({
-      shuttle: result.shuttle,
-      private: result.private
+      shuttle: randomShuttlePrice,
+      private: randomPrivatePrice
     });
   } catch (error) {
     console.error("Price inquiry engine breakdown:", error);
-    res.status(500).json({ error: "Internal database service disruption." });
+    res.status(500).json({ error: "Internal service disruption." });
   }
 });
 
-// CREATE STRIPE PAYMENT INTENT ROUTE (Fixed missing comma & missing parameter reference)
+// CREATE STRIPE PAYMENT INTENT ROUTE
 app.post('/api/create-stripe-payment-intent', async (req, res) => {
   try {
     const { calculatedSubunitAmount, currency, customerEmail } = req.body;
