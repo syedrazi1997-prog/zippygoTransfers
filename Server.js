@@ -59,6 +59,7 @@ app.post('/api/create-stripe-payment-intent', async (req, res) => {
 
 // 5. Stripe Webhook (Handles Emails)
 app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
+    console.log("🔍 Webhook request received!");
     const sig = req.headers['stripe-signature'];
     const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
