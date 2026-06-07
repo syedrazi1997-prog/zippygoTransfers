@@ -492,33 +492,46 @@
       resultsSection.scrollIntoView({ behavior: 'smooth' });
     }
 
-    document.getElementById('closeCheckoutBtn').addEventListener('click', () => checkoutModal.classList.add('hidden'));
-
-    // Safe Token Mock Initialization 
-    let stripe, cardElement;
-    try {
-      stripe = Stripe('pk_test_51TYoQt4xSQ4u2uQipD5BfQj2rS8Wl5oK6vYhCgU5uD9Vxl1r9pE5mF9D0Q4S7rV5n8M2X8L3N4m7P5Q2w1E5K6vY00e5N4z5v7');
-      const elements = stripe.elements();
-      cardElement = elements.create('card', { style: { base: { fontSize: '13px', color: '#0f172a' } } });
-      cardElement.mount('#stripeCardElementFrame');
-    } catch (e) {
-      console.warn("Isolated Gateway initialized in sandbox mode.", e);
-    }
-
-    document.getElementById('checkoutCombinedForm').addEventListener('submit', async function (e) {
+  document.getElementById('checkoutCombinedForm').addEventListener('submit', async function (e) {
       e.preventDefault();
-      const bookingRef = "GT-" + Math.floor(100000 + Math.random() * 900000);
-      const orderRecord = {
-        price: activeCurrencySymbol + selectedVehiclePrice,
-        vehicle: selectedVehicleTitle,
-        to: destInput.value
-      };
-      localStorage.setItem(bookingRef, JSON.stringify(orderRecord));
-      checkoutModal.classList.add('hidden');
       
-      document.getElementById('successRefNum').textContent = bookingRef;
-      document.getElementById('successClientName').textContent = document.getElementById('custFirstName').value + " " + document.getElementById('custLastName').value;
-      document.getElementById('successOverlayWindow').classList.remove('hidden');
+      const payButton = document.getElementById('paySubmitBtn');
+      payButton.disabled = true;
+      payButton.textContent = "Securing Route Allocation...";
+
+      const firstName = document.getElementById('custFirstName').value.trim();
+      const lastName = document.getElementById('custLastName').value.trim();
+      const email = document.getElementById('custEmail').value.trim();
+      const phone = document.getElementById('custPhone').value.trim();
+      const flight = document.getElementById('flightNo').value.trim().toUpperCase();
+
+      const bookingRef = "GT-" + Math.floor(100000 + Math.random() * 900000);
+      
+      // Structure the tracking document payload for email dispatch
+      const orderRecord = {
+        id: bookingRef,
+        firstName: firstName,
+        lastName: lastName,
+        email: email,
+        phone: phone,
+        flight: flight,
+        vehicle: selectedVehicleTitle,
+        price: selectedVehiclePrice,
+        currency: activeCurrencySymbol,
+        from: airInput.value || "Not Specified",
+        to: destInput.value || "Not Specified",
+        status: "Confirmed & Cleared",
+        timestamp: new Date().toLocaleDateString()
+      };
+
+      // Save locally to the My Bookings portal ledger
+      localStorage.setItem(bookingRef, JSON.stringify(orderRecord));
+
+      try {
+        // Trigger your backend notification service to push out the automated email tracking log
+        await fetch('https://zippygotransfersbackend.onrender.com/api/send-confirmation-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/
     });
   </script>
 </body>
