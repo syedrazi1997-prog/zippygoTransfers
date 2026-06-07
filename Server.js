@@ -4,151 +4,80 @@ const nodemailer = require('nodemailer');
 const Stripe = require('stripe');
 
 const app = express();
+
 app.use(cors());
-
-// Initialize Stripe instance with Secret Key
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_51TYoQt4xSQ4u2uQiZR8QWeq4UdZvoBffaGvsJnvxUwvrjnnyglxRBzpH5vmwRxg8MlwwP9svz2isMxd3ZIJIbyww00UziEIXX0');
-
-// REGISTERED BREVO MAIL RELAY CONFIGURATION
-const mailTransport = nodemailer.createTransport({
-  host: 'smtp-relay.brevo.com',
-  port: 587,
-  secure: false,
-  auth: {
-    user: process.env.BREVO_USER,
-    pass: process.env.BREVO_PASS
-  }
-});
-
-// Helper Function for Reusable Email Logic
-async function sendBookingEmail(email, details) {
-  const mailOptions = {
-    from: '"Zippygo Transfers" <confirmations@zippygo.com>',
-    to: email,
-    subject: `Booking Confirmed! Ref: ${details.id || 'N/A'}`,
-    html: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e0e0e0; padding: 20px;">
-        <h2 style="color: #4CAF50; text-align: center;">Booking Confirmed!</h2>
-        <p>Dear Customer,</p>
-        <p>Your transfer booking has been successfully confirmed and processed.</p>
-        <hr style="border: none; border-top: 1px solid #eee;" />
-        <h3>Transfer Details:</h3>
-        <p><strong>Booking Reference:</strong> ${details.id || 'Processed'}</p>
-        <p><strong>Vehicle Type:</strong> ${details.vehicle || 'Standard Transfer'}</p>
-        <p><strong>Amount Paid:</strong> ${(details.amount / 100).toFixed(2)} ${details.currency?.toUpperCase()}</p>
-        <hr style="border: none; border-top: 1px solid #eee;" />
-        <p style="font-size: 12px; color: #777; text-align: center;">Thank you for choosing Zippygo Transfers.</p>
-      </div>
-    `
-  };
-  await mailTransport.sendMail(mailOptions);
-}
-
-// 1. STRIPE WEBHOOK ROUTE (Must remain raw for signature validation)
-app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
-  const sig = req.headers['stripe-signature'];
-  let event;
-
-  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET; 
-
-  try {
-    event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
-  } catch (err) {
-    console.error(`❌ Webhook Error: ${err.message}`);
-    return res.status(400).send(`Webhook Error: ${err.message}`);
-  }
-
-  // Handle successful payment events automatically
-  if (event.type === 'payment_intent.succeeded') {
-    const paymentIntent = event.data.object;
-    console.log(`💰 Payment succeeded for intent: ${paymentIntent.id}`);
-    
-    try {
-      const customerEmail = paymentIntent.receipt_email || paymentIntent.billing_details?.email;
-      if (customerEmail) {
-        console.log(`📧 Dispatching confirmation email to: ${customerEmail}`);
-        // Automated trigger logic executes here
-        await sendBookingEmail(customerEmail, {
-          id: paymentIntent.id,
-          amount: paymentIntent.amount,
-          currency: paymentIntent.currency,
-          vehicle: paymentIntent.metadata?.vehicle || 'Confirmed Transfer'
-        });
-      }
-    } catch (mailErr) {
-      console.error("Failed to execute email dispatch during webhook:", mailErr);
-    }
-  }
-
-  res.json({ received: true });
-});
-
-// 2. GLOBAL JSON MIDDLEWARE (Applied ONLY to routes below)
 app.use(express.json());
 
-// DYNAMIC SEARCH ROUTE
-app.post('/api/get-transfer-price', async (req, res) => {
-  try {
-    const { destination } = req.body;
-    if (!destination) {
-      return res.status(400).json({ error: "Destination parameter is missing." });
+// 1. Initialize Stripe
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_51TYoQt4xSQ4u2uQiZR8QWeq4UdZvoBffaGvsJnvxUwvrjnnyglxRBzpH5vmwRxg8MlwwP9svz2isMxd3ZIJIbyww00UziEIXX0');
+
+// 2. Configure Brevo Mail Transport
+const mailTransport = nodemailer.createTransport({
+    host: 'smtp-relay.brevo.com',
+    port: 587,
+    secure: false,
+    auth: {
+        user: process.env.BREVO_USER,
+        pass: process.env.BREVO_PASS
     }
-
-    const randomShuttlePrice = (Math.random() * (45 - 15) + 15).toFixed(2);
-    const randomPrivatePrice = (Math.random() * (120 - 60) + 60).toFixed(2);
-
-    console.log(`Generated random prices for ${destination}: Shuttle = £${randomShuttlePrice}, Private = £${randomPrivatePrice}`);
-
-    res.json({
-      shuttle: randomShuttlePrice,
-      private: randomPrivatePrice
-    });
-  } catch (error) {
-    console.error("Price inquiry engine breakdown:", error);
-    res.status(500).json({ error: "Internal service disruption." });
-  }
 });
 
-// CREATE STRIPE PAYMENT INTENT ROUTE
+// 3. Email Helper Function
+async function sendBookingEmail(email, details) {
+    const mailOptions = {
+        from: '"Zippygo Transfers" <confirmations@zippygo.com>',
+        to: email,
+        subject: `Booking Confirmed! Ref: ${details.id || 'N/A'}`,
+        html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; padding: 20px;">
+                <h2 style="color: #4CAF50;">Booking Confirmed!</h2>
+                <p>Your transfer booking has been successfully processed.</p>
+                <p><strong>Reference:</strong> ${details.id}</p>
+                <p><strong>Vehicle:</strong> ${details.vehicle}</p>
+                <p><strong>Amount Paid:</strong> ${details.currency?.toUpperCase()} ${(details.amount / 100).toFixed(2)}</p>
+            </div>`
+    };
+    await mailTransport.sendMail(mailOptions);
+}
+
+// 4. Create Payment Intent
 app.post('/api/create-stripe-payment-intent', async (req, res) => {
-  try {
-    const { calculatedSubunitAmount, currency, customerEmail, vehicle } = req.body;
+    const { amount, currency } = req.body;
+    if (!amount) return res.status(400).json({ success: false, message: "Missing amount" });
 
-    const paymentIntent = await stripe.paymentIntents.create({
-      amount: calculatedSubunitAmount,
-      currency: currency.toLowerCase(),
-      automatic_payment_methods: { enabled: true },
-      receipt_email: customerEmail || null,
-      metadata: { vehicle: vehicle || 'Standard' } // Passed to webhook later
-    });
-
-    res.json({ clientSecret: paymentIntent.client_secret });
-  } catch (error) {
-    console.error("Stripe engine failed to initialize intent:", error);
-    res.status(500).json({ error: error.message });
-  }
+    try {
+        const paymentIntent = await stripe.paymentIntents.create({
+            amount: Math.round(amount * 100),
+            currency: currency || 'gbp',
+            automatic_payment_methods: { enabled: true },
+        });
+        res.json({ success: true, clientSecret: paymentIntent.client_secret });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
 });
 
-// MANUAL EMAIL ROUTE TRACE OVERRIDE
-app.post('/api/send-confirmation-email', async (req, res) => {
-  const { id, email, firstName, lastName, vehicle, from, to, currency, price } = req.body;
+// 5. Stripe Webhook (Handles Emails)
+app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
+    const sig = req.headers['stripe-signature'];
+    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
-  try {
-    await sendBookingEmail(email, {
-      id,
-      amount: price * 100, // Convert to subunit for helper function
-      currency,
-      vehicle: `${vehicle} (From: ${from} To: ${to})`
-    });
-    res.status(200).json({ success: true, message: "Confirmation email dispatched safely." });
-  } catch (error) {
-    console.error("Nodemailer service failed to deliver message relay:", error);
-    res.status(500).json({ error: "Failed to dispatch email confirmation." });
-  }
+    try {
+        const event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
+        if (event.type === 'payment_intent.succeeded') {
+            const pi = event.data.object;
+            await sendBookingEmail(pi.receipt_email || pi.billing_details?.email, {
+                id: pi.id,
+                amount: pi.amount,
+                currency: pi.currency,
+                vehicle: pi.metadata?.vehicle || 'Private Transfer'
+            });
+        }
+        res.json({ received: true });
+    } catch (err) {
+        res.status(400).send(`Webhook Error: ${err.message}`);
+    }
 });
 
-// START THE SERVER
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`Server executing live operations on network interface port: ${PORT}`);
-});
+const port = process.env.PORT || 10000;
+app.listen(port, () => console.log(`Backend server running on port ${port}`));
