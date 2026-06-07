@@ -45,7 +45,7 @@ app.use(express.json());
 const GLOBAL_MARGIN = 0.15;
 
 // Initialize Stripe with Secret Key
-const Stripe = Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_51TYoQt4xSQ4u2uQiZR8QWeq4UdZvoBffaGvsJnvxUwvrjnnyglxRBzpH5vmwRxg8MlwwP9svz2isMxd3ZIJIbyww00UziEIXX0');
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_51TYoQt4xSQ4u2uQiZR8QWeq4UdZvoBffaGvsJnvxUwvrjnnyglxRBzpH5vmwRxg8MlwwP9svz2isMxd3ZIJIbyww00UziEIXX0');
 
 // REGISTERED BREVO MAIL RELAY CONFIGURATION
 const mailTransport = nodemailer.createTransport({
