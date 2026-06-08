@@ -303,4 +303,3 @@ document
         'Pay & Complete Reservation →';
     }
   });
-```
