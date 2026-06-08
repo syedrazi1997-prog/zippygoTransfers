@@ -1,42 +1,133 @@
 import asyncio
-from flask import Flask, jsonify
-from playwright.async_api import async_playwright
 import os
 
-app = Flask(__name__)
+from flask import Flask, jsonify
+from playwright.async_api import async_playwright
+
+app = Flask(**name**)
+
+# =========================================
+
+# PLAYWRIGHT SCRAPER
+
+# =========================================
 
 async def run_scraper():
+
+```
+browser = None
+
+try:
+
     async with async_playwright() as p:
-        # FIX 1: Changed 'playwright.chromium' to 'p.chromium' to match context variable
-        browser = await p.chromium.launch(headless=True)
-        context = await browser.new_context(
-            user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+
+        browser = await p.chromium.launch(
+            headless=True,
+            args=["--no-sandbox", "--disable-setuid-sandbox"]
         )
-        
-        # FIX 2: Explicitly initialize the 'page' variable before using it
+
+        context = await browser.new_context(
+            user_agent=(
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                "AppleWebKit/537.36 (KHTML, like Gecko) "
+                "Chrome/120.0.0.0 Safari/537.36"
+            )
+        )
+
         page = await context.new_page()
-        
+
         print("Navigating to Suntransfers...")
-        await page.goto("https://www.suntransfers.com/", wait_until="networkidle")
-        
-        # ... (Your booking form filling logic goes here) ...
-        
-        # Example dummy data structure to return over the web
+
+        await page.goto(
+            "https://www.suntransfers.com/",
+            wait_until="domcontentloaded",
+            timeout=60000
+        )
+
+        # =========================================
+        # YOUR BOOKING FORM LOGIC HERE
+        # =========================================
+
         results = [
-            {"Vehicle Type": "Private Transfer", "Price": "7.31€"},
-            {"Vehicle Type": "Minivan", "Price": "10.42€"}
+            {
+                "Vehicle Type": "Private Transfer",
+                "Price": "7.31€"
+            },
+            {
+                "Vehicle Type": "Minivan",
+                "Price": "10.42€"
+            }
         ]
-        
+
         await browser.close()
+
         return results
+
+except Exception as e:
+
+    print("SCRAPER ERROR:", str(e))
+
+    if browser:
+        await browser.close()
+
+    return {
+        "error": str(e)
+    }
+```
+
+# =========================================
+
+# API ROUTE
+
+# =========================================
 
 @app.route('/scrape', methods=['GET'])
 def trigger_scrape():
-    # Runs the async Playwright function inside the synchronous Flask route
-    data = asyncio.run(run_scraper())
-    return jsonify({"status": "success", "data": data})
 
-if __name__ == '__main__':
-    # Render assigns a dynamic port, we must bind to it
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host='0.0.0.0', port=port)
+```
+try:
+
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+
+    data = loop.run_until_complete(run_scraper())
+
+    return jsonify({
+        "status": "success",
+        "data": data
+    })
+
+except Exception as e:
+
+    return jsonify({
+        "status": "error",
+        "message": str(e)
+    }), 500
+```
+
+# =========================================
+
+# HEALTH CHECK
+
+# =========================================
+
+@app.route('/')
+def home():
+return "SunTransfers Scraper Running"
+
+# =========================================
+
+# START SERVER
+
+# =========================================
+
+if **name** == '**main**':
+
+```
+port = int(os.environ.get("PORT", 5000))
+
+app.run(
+    host='0.0.0.0',
+    port=port
+)
+```
