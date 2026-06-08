@@ -120,9 +120,7 @@ app.post('/api/create-stripe-payment-intent', async (req, res) => {
     res.status(500).json({ success: false, message: err.message });
   }
 });
-/* ========================================= SERVE FRONTEND FILES ========================================= */
-// Tells Node to serve your visual layout assets directly on the main domain
-app.use(express.static(__dirname));
+
 /* ========================================= HEALTH CHECK ROUTE ========================================= */
 app.get('/', (req, res) => {
   // Directly loads your visual index page on the root link!
