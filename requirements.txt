@@ -1,4 +1,4 @@
-flask
-playwright
-pandas
-gunicorn
+flask==3.0.3
+playwright==1.45.0
+pandas==2.2.2
+gunicorn==22.0.0
