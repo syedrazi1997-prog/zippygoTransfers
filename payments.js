@@ -1,4 +1,3 @@
-```js
 const express = require('express');
 const Stripe = require('stripe');
 const nodemailer = require('nodemailer');
@@ -109,4 +108,3 @@ router.post('/create-stripe-payment-intent', async (req, res) => {
 });
 
 module.exports = router;
-```
