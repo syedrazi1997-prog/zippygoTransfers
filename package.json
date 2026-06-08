@@ -1,10 +1,17 @@
 {
 "name": "zippygo-backend",
 "version": "1.0.0",
+"description": "Zippygo Transfers Backend Server",
 "main": "Server.js",
+
 "scripts": {
 "start": "node Server.js"
 },
+
+"engines": {
+"node": ">=18.0.0"
+},
+
 "dependencies": {
 "cors": "^2.8.5",
 "dotenv": "^16.4.5",
