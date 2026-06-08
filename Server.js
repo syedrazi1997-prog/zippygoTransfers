@@ -76,14 +76,10 @@ try {
         ========================================= */
 
         const mailOptions = {
-
-            from: `"Zippygo Transfers" <${process.env.SENDER_EMAIL}>`,
-
-            to: customerEmail,
-
-            subject: `Booking Confirmation - ${metadata.bookingId || paymentIntent.id}`,
-
-            html: `
+          from: `"Zippygo Transfers" <${process.env.SENDER_EMAIL}>`,
+          to: customerEmail,
+          subject: `Booking Confirmation - ${metadata.bookingId || paymentIntent.id}`,
+          html: `
                 <div style="font-family: Arial, sans-serif; background:#f8fafc; padding:40px;">
 
                     <div style="max-width:600px;margin:auto;background:white;padding:30px;border-radius:16px;">
