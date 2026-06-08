@@ -217,12 +217,12 @@
     </div>
 
     <div id="myBookingsModalOverlay" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
-        <div class="bg-white rounded-2xl w-full max-w-md shadow-2xl overflow-hidden flex flex-col">
+        <div class="bg-white rounded-2xl w-full max-w-md shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
             <div class="bg-slate-900 px-6 py-4 text-white flex items-center justify-between">
                 <h3 class="font-bold text-base">🔍 Retrieve Your Transfer Booking</h3>
                 <button id="closeMyBookingsBtn" type="button" class="text-slate-400 hover:text-white font-bold text-sm">✕</button>
             </div>
-            <div class="p-6 space-y-4">
+            <div class="p-6 space-y-4 overflow-y-auto flex-1">
                 <div>
                     <label class="block text-xs font-bold text-slate-500 mb-2 uppercase">Booking Reference Number</label>
                     <input type="text" id="searchBookingId" placeholder="e.g., GT-385921" class="w-full p-3 bg-slate-50 border rounded-xl text-sm font-semibold tracking-wider uppercase focus:outline-none">
@@ -232,7 +232,28 @@
                     <input type="email" id="searchBookingEmail" placeholder="john@example.com" class="w-full p-3 bg-slate-50 border rounded-xl text-sm focus:outline-none">
                 </div>
                 <button type="button" id="executeBookingLookupBtn" class="w-full bg-slate-900 text-white font-bold py-3 rounded-xl text-sm tracking-wide transition shadow-md">Find My Details</button>
-                <div id="bookingLookupResponseTarget" class="mt-2 text-sm hidden p-4 rounded-xl border bg-slate-50 max-h-60 overflow-y-auto"></div>
+                
+                <div id="bookingLookupResponseTarget" class="mt-2 text-sm hidden p-4 rounded-xl border bg-slate-50"></div>
+                
+                <div id="bookingModificationPanel" class="hidden border rounded-xl p-4 bg-amber-50/50 border-amber-200">
+                    <h4 class="font-black text-xs text-amber-800 uppercase tracking-wider mb-3">Modify Protected Booking Parameters</h4>
+                    <div class="space-y-3">
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-1">Updated Flight Identification</label>
+                            <input type="text" id="modFlightNo" placeholder="Flight Number" class="w-full p-2.5 bg-white border text-xs rounded-lg font-medium focus:outline-none uppercase">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-1">Updated Contact Mobile Number</label>
+                            <input type="text" id="modPhone" placeholder="Phone Number" class="w-full p-2.5 bg-white border text-xs rounded-lg font-medium focus:outline-none">
+                        </div>
+                        <button id="saveModificationBtn" type="button" class="w-full bg-amber-500 hover:bg-amber-600 text-white text-xs font-black py-2.5 rounded-xl uppercase transition shadow-sm">
+                            Save Changes & Synchronize
+                        </button>
+                        <p class="text-[10px] text-slate-400 font-medium leading-relaxed">
+                            ⚠️ System restrictions allow core parameter adjustments up to exactly 48 hours preceding departure configurations.
+                        </p>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -260,116 +281,70 @@
         </button>
     </div>
 
-
-    <!-- ABOUT US SECTION -->
     <section id="aboutUsSection" class="max-w-7xl mx-auto px-4 py-20">
         <div class="bg-white rounded-3xl border border-slate-200 shadow-xl overflow-hidden">
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-0">
-                
                 <div class="p-8 md:p-12">
                     <span class="inline-block bg-emerald-100 text-emerald-700 text-xs font-black uppercase tracking-wider px-4 py-2 rounded-full mb-6">
                         About Zippygo Transfers
                     </span>
-
-                    <h2 class="text-4xl font-black text-slate-900 leading-tight mb-6">
-                        Reliable Airport Transfers Made Simple
-                    </h2>
-
-                    <p class="text-slate-600 text-sm leading-relaxed mb-5">
-                        Welcome to <span class="font-bold text-slate-900">Zippygo Transfers</span> — your trusted partner for fast, secure, and affordable airport transportation services worldwide.
-                    </p>
-
-                    <p class="text-slate-600 text-sm leading-relaxed mb-5">
-                        We specialize in airport transfers, hotel pickups, private transport services, and city-to-city travel solutions designed to make your journey smooth and stress-free.
-                    </p>
-
-                    <p class="text-slate-600 text-sm leading-relaxed mb-8">
-                        Whether you are travelling for business, family holidays, or leisure trips, our mission is to provide reliable transportation with transparent pricing and exceptional customer support.
-                    </p>
-
+                    <h2 class="text-4xl font-black text-slate-900 leading-tight mb-6">Reliable Airport Transfers Made Simple</h2>
+                    <p class="text-slate-600 text-sm leading-relaxed mb-5">Welcome to <span class="font-bold text-slate-900">Zippygo Transfers</span> — your trusted partner for fast, secure, and affordable airport transportation services worldwide.</p>
+                    <p class="text-slate-600 text-sm leading-relaxed mb-5">We specialize in airport transfers, hotel pickups, private transport services, and city-to-city travel solutions designed to make your journey smooth and stress-free.</p>
+                    <p class="text-slate-600 text-sm leading-relaxed mb-8">Whether you are travelling for business, family holidays, or leisure trips, our mission is to provide reliable transportation with transparent pricing and exceptional customer support.</p>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div class="bg-slate-50 border rounded-2xl p-5">
                             <div class="text-2xl mb-2">🚖</div>
                             <h4 class="font-black text-slate-900 text-sm mb-2">Professional Transfers</h4>
-                            <p class="text-xs text-slate-500 leading-relaxed">
-                                Comfortable vehicles with trusted transport partners worldwide.
-                            </p>
+                            <p class="text-xs text-slate-500 leading-relaxed">Comfortable vehicles with trusted transport partners worldwide.</p>
                         </div>
-
                         <div class="bg-slate-50 border rounded-2xl p-5">
                             <div class="text-2xl mb-2">⏰</div>
                             <h4 class="font-black text-slate-900 text-sm mb-2">On-Time Service</h4>
-                            <p class="text-xs text-slate-500 leading-relaxed">
-                                Reliable pickups and punctual drop-offs for every journey.
-                            </p>
+                            <p class="text-xs text-slate-500 leading-relaxed">Reliable pickups and punctual drop-offs for every journey.</p>
                         </div>
-
                         <div class="bg-slate-50 border rounded-2xl p-5">
                             <div class="text-2xl mb-2">💳</div>
                             <h4 class="font-black text-slate-900 text-sm mb-2">Transparent Pricing</h4>
-                            <p class="text-xs text-slate-500 leading-relaxed">
-                                No hidden costs with secure and easy payment systems.
-                            </p>
+                            <p class="text-xs text-slate-500 leading-relaxed">No hidden costs with secure and easy payment systems.</p>
                         </div>
-
                         <div class="bg-slate-50 border rounded-2xl p-5">
                             <div class="text-2xl mb-2">🌍</div>
                             <h4 class="font-black text-slate-900 text-sm mb-2">Global Coverage</h4>
-                            <p class="text-xs text-slate-500 leading-relaxed">
-                                Airport and hotel transfers available across major destinations.
-                            </p>
+                            <p class="text-xs text-slate-500 leading-relaxed">Airport and hotel transfers available across major destinations.</p>
                         </div>
                     </div>
                 </div>
-
                 <div class="bg-slate-900 text-white p-8 md:p-12 flex flex-col justify-center">
                     <span class="text-5xl mb-6">✈️</span>
-
-                    <h3 class="text-3xl font-black leading-tight mb-6">
-                        Travel Smarter With Zippygo
-                    </h3>
-
-                    <p class="text-slate-300 text-sm leading-relaxed mb-8">
-                        Our goal is to make airport transportation easier, safer, and more convenient for travellers around the world.
-                    </p>
-
+                    <h3 class="text-3xl font-black leading-tight mb-6">Travel Smarter With Zippygo</h3>
+                    <p class="text-slate-300 text-sm leading-relaxed mb-8">Our goal is to make airport transportation easier, safer, and more convenient for travellers around the world.</p>
                     <div class="space-y-4">
                         <div class="flex items-start space-x-3">
                             <span class="text-emerald-400 text-lg">✓</span>
                             <p class="text-sm text-slate-200">Private airport transfer services</p>
                         </div>
-
                         <div class="flex items-start space-x-3">
                             <span class="text-emerald-400 text-lg">✓</span>
                             <p class="text-sm text-slate-200">24/7 customer assistance</p>
                         </div>
-
                         <div class="flex items-start space-x-3">
                             <span class="text-emerald-400 text-lg">✓</span>
                             <p class="text-sm text-slate-200">Safe and secure online payments</p>
                         </div>
-
                         <div class="flex items-start space-x-3">
                             <span class="text-emerald-400 text-lg">✓</span>
                             <p class="text-sm text-slate-200">Instant booking confirmations</p>
                         </div>
                     </div>
-
-                    <button class="mt-8 bg-emerald-500 hover:bg-emerald-600 text-white font-bold px-6 py-3 rounded-2xl text-sm shadow-lg transition w-fit">
-                        💬 Chat With Us
-                    </button>
-
+                    <button class="mt-8 bg-emerald-500 hover:bg-emerald-600 text-white font-bold px-6 py-3 rounded-2xl text-sm shadow-lg transition w-fit">💬 Chat With Us</button>
                     <div class="mt-10 bg-white/10 border border-white/10 rounded-2xl p-5">
-                        <p class="text-sm text-slate-200 leading-relaxed">
-                            At Zippygo Transfers, customer satisfaction is our priority and we are committed to delivering dependable transport solutions you can trust.
-                        </p>
+                        <p class="text-sm text-slate-200 leading-relaxed">At Zippygo Transfers, customer satisfaction is our priority and we are committed to delivering dependable transport solutions you can trust.</p>
                     </div>
                 </div>
-
             </div>
         </div>
     </section>
-
 
     <footer class="bg-white border-t border-slate-200 mt-20 py-8 text-center text-xs font-medium text-slate-400">
         <p>© Zippygo.com 2026. Powered by secure network distribution layers.</p>
@@ -530,35 +505,15 @@
             const cleanDest = destIn.value ? destIn.value.split(',')[0].trim() : "Specified Location";
             heading.textContent = tripType === 'return' ? 'Available Return Transfer Options' : 'Available One Way Transfer Options';
             
-            // Re-usable layout renderer function
             function displayOptions(optionsList) {
                 target.innerHTML = '';
                 optionsList.forEach(deal => {
                     const convertedPrice = (parseFloat(deal.priceGbp) * activeExchangeRate).toFixed(2);
-                    const routeLegsLayout = tripType === 'return' ? 
-                        `<div class="space-y-1 text-xs font-bold text-slate-500">
-                            <p class="flex items-center text-emerald-600">🛫 Outbound: ${cleanAir} &rarr; ${cleanDest}</p>
-                            <p class="flex items-center text-blue-600">🛬 Return Leg: ${cleanDest} &rarr; ${cleanAir}</p>
-                        </div>` : 
-                        `<div class="text-xs font-bold text-emerald-600">🛫 One-Way Route: ${cleanAir} &rarr; ${cleanDest}</div>`;
+                    const routeLegsLayout = tripType === 'return' ? `<div class="space-y-1 text-xs font-bold text-slate-500"> <p class="flex items-center text-emerald-600">🛫 Outbound: ${cleanAir} &rarr; ${cleanDest}</p> <p class="flex items-center text-blue-600">🛬 Return Leg: ${cleanDest} &rarr; ${cleanAir}</p> </div>` : `<div class="text-xs font-bold text-emerald-600">🛫 One-Way Route: ${cleanAir} &rarr; ${cleanDest}</div>`;
                     
                     const card = document.createElement('div');
                     card.className = "bg-white rounded-xl border p-6 flex flex-col md:flex-row items-stretch justify-between shadow-md hover:border-emerald-500 transition gap-4 text-left";
-                    card.innerHTML = `
-                        <div class="flex-1 space-y-4">
-                            <div class="flex items-center space-x-2">
-                                <span class="bg-slate-100 text-slate-700 text-xs font-bold px-2.5 py-1 rounded-full uppercase">${tripType === 'return' ? '🔄 Return Included' : '➡️ One Way'}</span>
-                            </div>
-                            <h2 class="text-2xl font-black text-gray-800">${deal.vehicle}</h2>
-                            ${routeLegsLayout}
-                        </div>
-                        <div class="text-center md:text-right bg-slate-50 p-5 rounded-xl border min-w-[220px] flex flex-col justify-center">
-                            <span class="text-xs text-gray-400 block font-medium">Total Price</span>
-                            <p class="text-4xl font-black text-slate-900">${activeCurrencySymbol}${convertedPrice}</p>
-                            <button type="button" class="book-transfer-action-trigger mt-3 w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-2.5 rounded-xl text-xs transition shadow-md" data-title="${deal.vehicle}" data-price="${convertedPrice}"> Book This Transfer </button>
-                        </div>
-                    `;
-                    target.appendChild(card);
+                    card.innerHTML = ` <div class="flex-1 space-y-4"> <div class="flex items-center space-x-2"> <span class="bg-slate-100 text-slate-700 text-xs font-bold px-2.5 py-1 rounded-full uppercase">${tripType === 'return' ? '🔄 Return Included' : '➡️ One Way'}</span> </div> <h2 class="text-2xl font-black text-gray-800">${deal.vehicle}</h2> ${routeLegsLayout} </div> <div class="text-center md:text-right bg-slate-50 p-5 rounded-xl border min-w-[220px] flex flex-col justify-center"> <span class="text-xs text-gray-400 block font-medium">Total Price</span> <p class="text-4xl font-black text-slate-900">${activeCurrencySymbol}${convertedPrice}</p> <button type="button" class="book-transfer-action-trigger mt-3 w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-2.5 rounded-xl text-xs transition shadow-md" data-title="${deal.vehicle}" data-price="${convertedPrice}"> Book This Transfer </button> </div> `; target.appendChild(card);
                 });
                 
                 document.querySelectorAll('.book-transfer-action-trigger').forEach(btn => {
@@ -573,52 +528,35 @@
                 });
             }
 
-            // Fire fetch call, switch dynamically to client generation if server is offline
-            const response = await fetch('https://zippygotransfersbackend-wvw5.onrender.com/api/search-transfers', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    airport: airIn.value,
-                    destination: destIn.value,
-                    tripType: tripType,
-                    passengers: document.getElementById('passengerSelect').value
-                })
-            })
-            .then(res => res.json())
-            .then(data => {
+            try {
+                const response = await fetch('https://zippygotransfersbackend-wvw5.onrender.com/api/search-transfers', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        airport: airIn.value,
+                        destination: destIn.value,
+                        tripType: tripType,
+                        passengers: document.getElementById('passengerSelect').value
+                    })
+                });
+                const data = await response.json();
                 if (data.success && data.options) {
                     displayOptions(data.options);
                 } else {
                     throw new Error("Invalid backend formatting");
                 }
-            })
-            .catch(error => {
-                console.warn("Backend down or blocked. Generating dynamic local fallback pricing profiles:", error);
-                
+            } catch (error) {
+                console.warn("Backend dynamic localized fallback validation running:", error);
                 const passengerCount = parseInt(document.getElementById('passengerSelect').value) || 2;
                 const baseMultiplier = tripType === 'return' ? 1.85 : 1.0;
                 
-                // Native pricing computation architecture
                 const localMockOptions = [
-                    { 
-                        id: "ZP-SHUTTLE-FALLBACK",
-                        vehicle: "Shared Shuttle Transit Service", 
-                        priceGbp: ((14 + Math.random() * 5) * baseMultiplier * passengerCount).toFixed(2) 
-                    },
-                    { 
-                        id: "ZP-SEDAN-FALLBACK",
-                        vehicle: "Private Standard Saloon Car", 
-                        priceGbp: ((38 + Math.random() * 12) * baseMultiplier * (1 + passengerCount * 0.05)).toFixed(2) 
-                    },
-                    { 
-                        id: "ZP-MINIVAN-FALLBACK",
-                        vehicle: "Private Executive MPV Minivan", 
-                        priceGbp: ((65 + Math.random() * 20) * baseMultiplier * (1 + passengerCount * 0.08)).toFixed(2) 
-                    }
+                    { id: "ZP-SHUTTLE-FALLBACK", vehicle: "Shared Shuttle Transit Service", priceGbp: ((14 + Math.random() * 5) * baseMultiplier * passengerCount).toFixed(2) },
+                    { id: "ZP-SEDAN-FALLBACK", vehicle: "Private Standard Saloon Car", priceGbp: ((38 + Math.random() * 12) * baseMultiplier * (1 + passengerCount * 0.05)).toFixed(2) },
+                    { id: "ZP-MINIVAN-FALLBACK", vehicle: "Private Executive MPV Minivan", priceGbp: ((65 + Math.random() * 20) * baseMultiplier * (1 + passengerCount * 0.08)).toFixed(2) }
                 ];
-                
                 displayOptions(localMockOptions);
-            });
+            }
             section.scrollIntoView({ behavior: 'smooth' });
         }
 
@@ -639,6 +577,7 @@
             const flight = document.getElementById('flightNo').value.trim().toUpperCase();
             const finalCalculatedCost = parseFloat(selectedVehiclePrice);
             const activeCurrencyCode = currencySelector.value;
+            const chosenDate = document.getElementById('arrivalDate').value;
             
             try {
                 const response = await fetch('https://zippygotransfersbackend-wvw5.onrender.com/api/create-stripe-payment-intent', {
@@ -665,7 +604,7 @@
                         flight: flight, vehicle: selectedVehicleTitle, price: selectedVehiclePrice, currency: activeCurrencySymbol,
                         from: airIn.value || "Not Specified", to: destIn.value || "Not Specified",
                         status: "Confirmed & Paid via Stripe Secure Core", paymentId: result.paymentIntent.id || "PI-MOCK-RESERVE",
-                        timestamp: new Date().toLocaleDateString()
+                        timestamp: new Date().toLocaleDateString(), departureDate: chosenDate
                     };
                     
                     lastGeneratedBookingCache = orderRecord;
@@ -699,7 +638,7 @@
                 console.error(err);
                 errorDisplay.textContent = `Payment Failed: ${err.message}`;
                 errorDisplay.classList.remove('hidden');
-            } finally {
+            } final {
                 payButton.disabled = false;
                 payButton.textContent = "Pay & Complete Reservation →";
             }
@@ -707,16 +646,20 @@
 
         navMyBookingsBtn.addEventListener('click', () => {
             bookingLookupResponseTarget.classList.add('hidden');
+            document.getElementById('bookingModificationPanel').classList.add('hidden');
             bookingLookupResponseTarget.innerHTML = '';
             document.getElementById('searchBookingId').value = '';
             myBookingsOverlay.classList.remove('hidden');
         });
         closeMyBookingsBtn.addEventListener('click', () => myBookingsOverlay.classList.add('hidden'));
 
+        // COMPREHENSIVE BOOKING Retrieval AND LOOKUP ALIGNMENT ENGINE
         executeBookingLookupBtn.addEventListener('click', function() {
             const searchId = document.getElementById('searchBookingId').value.trim().toUpperCase();
             const searchEmail = document.getElementById('searchBookingEmail').value.trim().toLowerCase();
+            const modificationPanel = document.getElementById('bookingModificationPanel');
             bookingLookupResponseTarget.classList.remove('hidden');
+            modificationPanel.classList.add('hidden');
             
             if (!searchId || !searchEmail) {
                 bookingLookupResponseTarget.innerHTML = '<p class="text-rose-500 font-bold text-xs">⚠️ Please supply both reference index and profile email values.</p>';
@@ -731,16 +674,57 @@
                         <div class="space-y-2 text-left text-xs text-slate-700">
                             <p class="border-b pb-1"><span class="font-black text-slate-900">Status:</span> <span class="text-emerald-600 font-bold">${data.status}</span></p>
                             <p><span class="font-bold text-slate-900">Lead Passenger:</span> ${data.firstName} ${data.lastName}</p>
-                            <p><span class="font-bold text-slate-900">Vehicle:</span> ${data.vehicle}</p>
+                            <p><span class="font-bold text-slate-900">Vehicle Type:</span> ${data.vehicle}</p>
                             <p><span class="font-bold text-slate-900">Route Path:</span> ${data.from} ➔ ${data.to}</p>
-                            <p><span class="font-bold text-slate-900">Flight Number:</span> ${data.flight}</p>
+                            <p><span class="font-bold text-slate-900">Flight Reference:</span> ${data.flight || 'Not Specified'}</p>
+                            <p><span class="font-bold text-slate-900">Mobile Link:</span> ${data.phone || 'Not Specified'}</p>
                             <p class="border-t pt-1 font-black text-slate-900 text-sm">Total Paid: ${data.currency}${data.price}</p>
-                        </div>
-                    `;
+                        </div>`;
+                    
+                    // PRELOAD EXCLUSIVELY FOR MODIFICATION TRACKING
+                    document.getElementById('modFlightNo').value = data.flight || '';
+                    document.getElementById('modPhone').value = data.phone || '';
+                    modificationPanel.classList.remove('hidden');
                     return;
                 }
             }
             bookingLookupResponseTarget.innerHTML = '<p class="text-rose-500 font-semibold text-xs">❌ No match located. Please check reference key structures.</p>';
+        });
+
+        // SECURE 48-HOUR RESTRICTION AMENDMENT VALIDATION
+        document.getElementById('saveModificationBtn').addEventListener('click', async () => {
+            if (!lastGeneratedBookingCache) return;
+            
+            if (!lastGeneratedBookingCache.departureDate) {
+                alert("Departure schedule missing. Parameter modifications require validation via direct support pipelines.");
+                return;
+            }
+            
+            const departureTimeObj = new Date(lastGeneratedBookingCache.departureDate).getTime();
+            const currentTimeObj = new Date().getTime();
+            const computationGapHours = (departureTimeObj - currentTimeObj) / (1000 * 60 * 60);
+            
+            if (computationGapHours < 48) {
+                alert("Lockout Enforcement: Modifications are strictly barred under the 48-hour departure threshold safety ceiling.");
+                return;
+            }
+            
+            const freshFlightVal = document.getElementById('modFlightNo').value.trim().toUpperCase();
+            const freshPhoneVal = document.getElementById('modPhone').value.trim();
+            
+            if(!freshFlightVal || !freshPhoneVal) {
+                alert("Please provide valid data fields to finalize booking modifications.");
+                return;
+            }
+
+            // OVERWRITE PARAMETER CONFIGURATIONS
+            lastGeneratedBookingCache.flight = freshFlightVal;
+            lastGeneratedBookingCache.phone = freshPhoneVal;
+            localStorage.setItem(lastGeneratedBookingCache.id.toUpperCase(), JSON.stringify(lastGeneratedBookingCache));
+            
+            alert(`Success! Transfer records for ${lastGeneratedBookingCache.id} have been updated cleanly.`);
+            myBookingsOverlay.classList.add('hidden');
+            window.location.reload();
         });
 
         toggleChatWidgetActivatorBtn.addEventListener('click', () => {
@@ -749,8 +733,8 @@
         });
         minimizeChatWidgetBtn.addEventListener('click', () => liveChatWidgetContainer.classList.add('hidden'));
 
-        // CLEAN STABLE LIVE SIMULATION CHAT INTERACTION PROFILES
-        function appendLiveSupportChatMessage() {
+        // BACKEND ENDPOINT INTEGRATION FOR LIVE GEMINI CONTEXT PROCESSING
+        async function appendLiveSupportChatMessage() {
             const text = liveChatMessageInput.value.trim();
             if (!text) return;
 
@@ -763,38 +747,33 @@
 
             const loadingBubble = document.createElement('div');
             loadingBubble.className = "bg-white border text-slate-400 p-3 rounded-xl max-w-[85%] mr-auto font-medium shadow-sm animate-pulse";
-            loadingBubble.textContent = "AI Support is typing...";
+            loadingBubble.textContent = "AI Support is thinking...";
             liveChatLogContainer.appendChild(loadingBubble);
             liveChatLogContainer.scrollTop = liveChatLogContainer.scrollHeight;
 
-            setTimeout(() => {
+            try {
+                const response = await fetch('https://zippygotransfersbackend-wvw5.onrender.com/api/gemini/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: text })
+                });
+                const data = await response.json();
                 loadingBubble.remove();
+
                 const supportBubble = document.createElement('div');
                 supportBubble.className = "bg-white border text-slate-700 p-3 rounded-xl max-w-[85%] mr-auto font-medium shadow-sm break-words leading-relaxed";
-                
-                const query = text.toLowerCase();
-                let reply = "Thank you for reaching out to Zippygo Support. Our private transit lines are running normally. Let me know if you would like info on specific vehicle capacities or routes!";
-
-                if (query.includes('hello') || query.includes('hi') || query.includes('hey')) {
-                    reply = "Hello! Welcome to Zippygo Live Support. How can I assist you with your airport transfer requirements today?";
-                } else if (query.includes('luggage') || query.includes('bag') || query.includes('suitcase')) {
-                    reply = "All Zippygo private saloons accommodate up to 3 standard suitcases. For larger luggage profiles or golf clubs, we highly recommend selecting our Minivan option during checkout.";
-                } else if (query.includes('price') || query.includes('cost') || query.includes('how much')) {
-                    reply = "Our prices are calculated live based on distance and vehicle configurations. Please use our main search tool above to fetch real-time transparent quotes in your preferred currency.";
-                } else if (query.includes('cancel') || query.includes('amend') || query.includes('change')) {
-                    reply = "You can easily modify or cancel your booking up to 24 hours before your scheduled pickup time completely free of charge. Please contact our support desk with your GT reference code.";
-                } else if (query.includes('booking') || query.includes('status') || query.includes('reference') || query.includes('active')) {
-                    if (lastGeneratedBookingCache) {
-                        reply = `I found your active booking context! Reference ${lastGeneratedBookingCache.id} for passenger ${lastGeneratedBookingCache.firstName} is confirmed for vehicle: ${lastGeneratedBookingCache.vehicle}.`;
-                    } else {
-                        reply = "If you have an active booking, click the 'My Bookings' button at the top right of the homepage to securely pull up your live status details.";
-                    }
-                }
-
-                supportBubble.textContent = reply;
+                supportBubble.textContent = data.reply || "No structural feedback returned from systems. Please attempt again.";
                 liveChatLogContainer.appendChild(supportBubble);
-                liveChatLogContainer.scrollTop = liveChatLogContainer.scrollHeight;
-            }, 750);
+            } catch (error) {
+                console.error("Gemini context connection error:", error);
+                loadingBubble.remove();
+                
+                const fallbackBubble = document.createElement('div');
+                fallbackBubble.className = "bg-white border text-rose-500 p-3 rounded-xl max-w-[85%] mr-auto font-medium shadow-sm";
+                fallbackBubble.textContent = "Core operational lines crowded. Please submit request details directly via main form architectures.";
+                liveChatLogContainer.appendChild(fallbackBubble);
+            }
+            liveChatLogContainer.scrollTop = liveChatLogContainer.scrollHeight;
         }
 
         sendLiveChatMessageBtn.addEventListener('click', appendLiveSupportChatMessage);
