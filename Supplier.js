@@ -1,6 +1,6 @@
 module.exports = {
-  // Global margin configuration (e.g., 0.15 = 15% hidden profit markup applied to all rates)
-  GLOBAL_MARGIN: 0.15,
+  // Global margin configuration (e.g., 0.5 = 5% hidden profit markup applied to all rates)
+  GLOBAL_MARGIN: 0.5,
 
   // Mock endpoints representing real supplier REST API connections
   SUPPLIERS: {
