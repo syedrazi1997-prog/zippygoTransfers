@@ -2,10 +2,10 @@
 "name": "zippygo-backend",
 "version": "1.0.0",
 "description": "Zippygo Transfers Backend Server",
-"main": "Server.js",
+"main": "server.js",
 
 "scripts": {
-"start": "node Server.js"
+"start": "node server.js"
 },
 
 "engines": {
