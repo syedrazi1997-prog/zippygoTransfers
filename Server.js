@@ -76,7 +76,7 @@ try {
         ========================================= */
 
         const mailOptions = {
-          from: `"Zippygo Transfers" <${process.env.SENDER_EMAIL}>`,
+         from: `"Zippygo Transfers" <ac4bc1001@smtp-brevo.com>`,
           to: customerEmail,
           subject: `Booking Confirmation - ${metadata.bookingId || paymentIntent.id}`,
           html: `
