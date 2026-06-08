@@ -574,7 +574,7 @@
             }
 
             // Fire fetch call, switch dynamically to client generation if server is offline
-            fetch('https://zippygotransfersbackend.onrender.com/api/search-transfers', {
+            fetch('https://zippygotransfers.onrender.com/api/search-transfers', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -641,7 +641,7 @@
             const activeCurrencyCode = currencySelector.value;
             
             try {
-                const response = await fetch('https://zippygotransfersbackend.onrender.com/api/create-stripe-payment-intent', {
+                const response = await fetch('https://https://zippygotransfers.onrender.com/api/create-stripe-payment-intent', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ amount: finalCalculatedCost, currency: activeCurrencyCode })
