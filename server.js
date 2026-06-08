@@ -4,7 +4,7 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 
-const paymentRoutes = require('./routes/payments');
+const paymentRoutes = require('./payments');
 
 const app = express();
 
@@ -44,4 +44,3 @@ const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
 });
-```
