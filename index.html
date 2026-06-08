@@ -509,7 +509,7 @@
 
         searchBtn.addEventListener('click', renderCatalogOptions);
 
-        function renderCatalogOptions() {
+        async function renderCatalogOptions() {
             const target = document.getElementById('resultsInjectTarget');
             const section = document.getElementById('searchResultsSection');
             const heading = document.getElementById('resultsHeaderTitle');
@@ -799,6 +799,7 @@
 
         sendLiveChatMessageBtn.addEventListener('click', appendLiveSupportChatMessage);
         liveChatMessageInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') appendLiveSupportChatMessage(); });
+    </script>
     <script src="app.js"></script>
 </body>
 </html>
