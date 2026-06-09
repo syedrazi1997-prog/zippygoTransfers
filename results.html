@@ -69,7 +69,7 @@
             const target = document.getElementById('resultsInjectTarget');
             
             try {
-                const response = await fetch('https://zippygotransfersbackend-wvw5.onrender.com/api/search-transfers', {
+                const response = await fetch('https://zippygotransfersbackend.onrender.com/api/search-transfers', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ airport, destination, tripType, passengers })
@@ -111,7 +111,7 @@
             btn.disabled = true; btn.textContent = "Securing Authorization lines...";
 
             try {
-                const response = await fetch('https://zippygotransfersbackend-wvw5.onrender.com/api/create-stripe-payment-intent', {
+                const response = await fetch('https://https://zippygotransfersbackend.onrender.com/api/create-stripe-payment-intent', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ amount: targetPrice, currency: 'GBP' })
