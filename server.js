@@ -10,9 +10,9 @@ const app = express();
 app.use(cors({
     origin: ['https://zippygotransfers.onrender.com', 'http://localhost:10000'],
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true
 }));
-
 /* ========================================= DYNAMIC CHAT PROCESSING ========================================= */
 app.post('/api/gemini/chat', async (req, res) => {
     try {
