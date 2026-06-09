@@ -638,7 +638,7 @@
                 console.error(err);
                 errorDisplay.textContent = `Payment Failed: ${err.message}`;
                 errorDisplay.classList.remove('hidden');
-            } final {
+            } finally {
                 payButton.disabled = false;
                 payButton.textContent = "Pay & Complete Reservation →";
             }
