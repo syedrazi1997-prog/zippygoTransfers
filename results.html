@@ -78,22 +78,24 @@
                 const data = await response.json();
                 target.innerHTML = '';
 
-                if (data.success && data.options) {
-                    data.options.forEach(deal => {
-                        const card = document.createElement('div');
-                        card.className = "bg-white rounded-xl border p-6 flex flex-col md:flex-row items-center justify-between shadow-md text-left";
-                        card.innerHTML = `
-                            <div class="space-y-2 text-left">
-                                <span class="bg-slate-100 text-slate-700 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">${tripType || 'Transfer'}</span>
-                                <h3 class="text-xl font-black text-slate-800">${deal.vehicle}</h3>
-                                <p class="text-xs text-slate-400 font-semibold">Route Coverage Includes All Local Runway Tariffs</p>
-                            </div>
-                            <div class="text-center md:text-right mt-4 md:mt-0 min-w-[150px]">
-                                <p class="text-3xl font-black text-slate-900">£${deal.priceGbp}</p>
-                                <button type="button" class="book-btn mt-2 w-full bg-emerald-500 text-white font-bold px-4 py-2 rounded-xl text-xs shadow transition hover:bg-emerald-600" data-title="${deal.vehicle}" data-price="${deal.priceGbp}">Select Vehicle</button>
-                            </div>`;
-                        target.appendChild(card);
-                    });
+                data.options.forEach(deal => {
+    const card = document.createElement('div');
+    card.className = "bg-white rounded-xl border p-6 flex flex-col md:flex-row items-center justify-between shadow-md text-left";
+    
+    // Clean backtick template literal formatting
+    card.innerHTML = `
+        <div class="space-y-2 text-left">
+            <span class="bg-slate-100 text-slate-700 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">${tripType || 'Transfer'}</span>
+            <h3 class="text-xl font-black text-slate-800">${deal.vehicle}</h3>
+            <p class="text-xs text-slate-400 font-semibold">Route Coverage Includes All Local Runway Tariffs</p>
+        </div>
+        <div class="text-center md:text-right mt-4 md:mt-0 min-w-[150px]">
+            <p class="text-3xl font-black text-slate-900">£${deal.priceGbp}</p>
+            <button type="button" class="book-btn mt-2 w-full bg-emerald-500 text-white font-bold px-4 py-2 rounded-xl text-xs shadow transition hover:bg-emerald-600" data-title="${deal.vehicle}" data-price="${deal.priceGbp}">Select Vehicle</button>
+        </div>`;
+        
+    target.appendChild(card);
+});
 
                     document.querySelectorAll('.book-btn').forEach(btn => {
                         btn.addEventListener('click', function() {
