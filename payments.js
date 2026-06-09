@@ -9,13 +9,12 @@ const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
 /* ========================================= BREVO MAIL ========================================= */
 
 const transporter = nodemailer.createTransport({
-  host: 'smtp-relay.brevo.com',
-  port: 587,
-  secure: false,
-  auth: {
-    user: process.env.BREVO_USER,
-    pass: process.env.BREVO_PASS
-  }
+    host: "smtp-brevo.com",
+    port: 587,
+    auth: {
+        user: process.env.BREVO_SMTP_USER_KEY, // Matches your active dashboard key
+        pass: process.env.BREVO_SMTP_PASSWORD_KEY // Matches your active dashboard key
+    }
 });
 
 /* ========================================= SEARCH TRANSFERS ========================================= */
