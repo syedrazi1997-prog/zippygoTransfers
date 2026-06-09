@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Available Transfer Rates | Zippygo</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://js.stripe.com/v3/"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+        .StripeElement { background-color: #f8fafc; padding: 14px; border-radius: 12px; border: 1px solid #e2e8f0; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-900 min-h-screen flex flex-col">
+    <header class="bg-slate-900 text-white h-20 flex items-center px-6"><a href="/" class="text-2xl font-black"><span class="text-emerald-500">Zippy</span>go</a></header>
+
+    <main class="flex-1 max-w-4xl mx-auto px-4 py-12 w-full space-y-6">
+        <a href="/" class="text-xs font-bold text-slate-500 hover:text-slate-800 transition block">&larr; Modify Search Parameters</a>
+        <h2 id="resultsHeaderTitle" class="text-2xl font-black tracking-tight">Searching matching transit quotes...</h2>
+        
+        <div id="resultsInjectTarget" class="space-y-4"></div>
+
+        <section id="successReceiptSection" class="bg-white rounded-3xl border shadow-2xl overflow-hidden hidden">
+            <div class="bg-emerald-600 px-8 py-10 text-white text-center space-y-2">
+                <h2 class="text-3xl font-black">Booking Confirmed!</h2>
+                <p class="text-emerald-100 text-sm">Your transfer reservation has been completely paid and synchronized via Stripe Core.</p>
+            </div>
+            <div class="p-8 space-y-4 text-sm font-semibold text-slate-700" id="receiptSummaryBlock"></div>
+        </section>
+    </main>
+
+    <div id="checkoutModalOverlay" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-white rounded-2xl w-full max-w-xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div class="bg-slate-900 p-6 text-white flex justify-between items-center">
+                <h3 class="font-bold text-lg" id="checkoutTitle">Secure Checkout</h3>
+                <button type="button" onclick="document.getElementById('checkoutModalOverlay').classList.add('hidden')" class="text-slate-400 hover:text-white">✕</button>
+            </div>
+            <form id="checkoutCombinedForm" class="p-6 space-y-4 overflow-y-auto">
+                <input type="text" id="custName" required placeholder="Full Name" class="w-full p-3 bg-slate-50 border rounded-xl text-sm">
+                <input type="email" id="custEmail" required placeholder="Email Address" class="w-full p-3 bg-slate-50 border rounded-xl text-sm">
+                <input type="tel" id="custPhone" required placeholder="Contact Number" class="w-full p-3 bg-slate-50 border rounded-xl text-sm">
+                <input type="text" id="flightNo" required placeholder="Flight Number (e.g. BA241)" class="w-full p-3 bg-slate-50 border rounded-xl text-sm uppercase">
+                <div id="stripe-card-element-mount-point" class="my-2"></div>
+                <div id="payment-errors" class="text-xs text-rose-500 hidden font-bold"></div>
+                <button type="submit" id="paySubmitBtn" class="w-full bg-emerald-500 text-white font-black py-4 rounded-xl text-sm uppercase transition tracking-wider shadow-md">Pay & Finalize Journey →</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const stripe = Stripe('pk_test_51TYoQt4xSQ4u2uQiVgNXdjreUGfGFJOeAoSIBGzMa9sZc6g9ZhzpKTI16CS2RZZ0O1XFrSZ5yMD8gnACnqtOclWH00kI3gYAqx');
+        const elements = stripe.elements();
+        const cardElement = elements.create('card');
+        cardElement.mount('#stripe-card-element-mount-point');
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const airport = urlParams.get('airport');
+        const destination = urlParams.get('destination');
+        const tripType = urlParams.get('tripType');
+        const passengers = urlParams.get('passengers');
+        const arrivalDate = urlParams.get('arrivalDate');
+
+        let targetTitle = "", targetPrice = "";
+
+        // Trigger dynamic API rate fetch immediately on multi-page launch load
+        async function fetchQuotes() {
+            document.getElementById('resultsHeaderTitle').textContent = `Available Quotes: ${airport} to ${destination}`;
+            const target = document.getElementById('resultsInjectTarget');
+            
+            try {
+                const response = await fetch('/api/search-transfers', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ airport, destination, tripType, passengers })
+                });
+                const data = await response.json();
+                target.innerHTML = '';
+
+                data.options.forEach(deal => {
+                    const card = document.createElement('div');
+                    card.className = "bg-white rounded-xl border p-6 flex flex-col md:flex-row items-center justify-between shadow-md";
+                    card.innerHTML = `
+                        <div class="space-y-2 text-left">
+                            <span class="bg-slate-100 text-slate-700 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">${tripType}</span>
+                            <h3 class="text-xl font-black">${deal.vehicle}</h3>
+                            <p class="text-xs text-slate-400 font-semibold">Route Coverage Includes All Local Runway Tariffs</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-3xl font-black text-slate-900">£${deal.priceGbp}</p>
+                            <button type="button" class="book-btn mt-2 bg-emerald-500 text-white font-bold px-4 py-2 rounded-xl text-xs shadow" data-title="${deal.vehicle}" data-price="${deal.priceGbp}">Select Vehicle</button>
+                        </div>`;
+                    target.appendChild(card);
+                });
+
+                document.querySelectorAll('.book-btn').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        targetTitle = this.getAttribute('data-title');
+                        targetPrice = this.getAttribute('data-price');
+                        document.getElementById('checkoutTitle').textContent = `Booking: ${targetTitle} (£${targetPrice})`;
+                        document.getElementById('checkoutModalOverlay').classList.remove('hidden');
+                    });
+                });
+            } catch (err) { console.error(err); }
+        }
+
+        // Handle Payment Intent processing Form submission safely
+        document.getElementById('checkoutCombinedForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const btn = document.getElementById('paySubmitBtn');
+            btn.disabled = true; btn.textContent = "Securing Authorization lines...";
+
+            try {
+                const response = await fetch('/api/create-stripe-payment-intent', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ amount: targetPrice, currency: 'GBP' })
+                });
+                const intentData = await response.json();
+
+                const outcome = await stripe.confirmCardPayment(intentData.clientSecret, {
+                    payment_method: { card: cardElement, billing_details: { name: document.getElementById('custName').value } }
+                });
+
+                if (outcome.error) {
+                    document.getElementById('payment-errors').textContent = outcome.error.message;
+                    document.getElementById('payment-errors').classList.remove('hidden');
+                } else if (outcome.paymentIntent.status === 'succeeded') {
+                    const bookingId = "GT-" + Date.now().toString().slice(-6);
+                    
+                    // Populate local data structures
+                    const record = {
+                        id: bookingId, name: document.getElementById('custName').value,
+                        email: document.getElementById('custEmail').value, phone: document.getElementById('custPhone').value,
+                        flight: document.getElementById('flightNo').value, vehicle: targetTitle, price: targetPrice,
+                        from: airport, to: destination, departureDate: arrivalDate, status: "Paid & Confirmed"
+                    };
+                    localStorage.setItem(bookingId, JSON.stringify(record));
+
+                    document.getElementById('checkoutModalOverlay').classList.add('hidden');
+                    document.getElementById('resultsInjectTarget').classList.add('hidden');
+                    document.getElementById('resultsHeaderTitle').classList.add('hidden');
+                    
+                    document.getElementById('receiptSummaryBlock').innerHTML = `
+                        <p class="border-b pb-2"><span class="text-slate-400">Reference:</span> ${bookingId}</p>
+                        <p><span class="text-slate-400">Passenger Profile:</span> ${record.name}</p>
+                        <p><span class="text-slate-400">Fleet Sizing Allocation:</span> ${record.vehicle}</p>
+                        <p><span class="text-slate-400">Route Path Parameters:</span> ${record.from} &rarr; ${record.to}</p>
+                        <p class="text-lg font-black text-slate-900 pt-2">Total Charged: £${targetPrice}</p>`;
+                    
+                    document.getElementById('successReceiptSection').classList.remove('hidden');
+
+                    fetch('/api/send-confirmation-email', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(record)
+                    }).catch(e => console.log(e));
+                }
+            } catch (err) { console.error(err); }
+            finally { btn.disabled = false; btn.textContent = "Pay & Finalize Journey →"; }
+        });
+
+        window.onload = fetchQuotes;
+    </script>
+</body>
+</html>
