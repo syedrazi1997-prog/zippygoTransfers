@@ -6,11 +6,12 @@ const { GoogleGenAI } = require('@google/genai');
 
 const app = express();
 
-/* ========================================= MIDDLEWARE ========================================= */
-app.use(cors());
-app.use('/api/webhook', express.raw({ type: 'application/json' }));
-app.use(express.json());
-app.use(express.static(__dirname));
+/* ========================================= PRODUCTION SEPARATED CORS MIDDLEWARE ========================================= */
+app.use(cors({
+    origin: ['https://zippygotransfers.onrender.com', 'http://localhost:10000'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    credentials: true
+}));
 
 /* ========================================= DYNAMIC CHAT PROCESSING ========================================= */
 app.post('/api/gemini/chat', async (req, res) => {
