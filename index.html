@@ -106,7 +106,7 @@
             });
         });
 
-        // Safe query string handoff redirection layer
+        // Fixed case-sensitive redirection path to point to Results.html
         document.getElementById('searchEngineForm').addEventListener('submit', function(e) {
             e.preventDefault();
             const params = new URLSearchParams({
@@ -116,7 +116,7 @@
                 passengers: document.getElementById('passengerSelect').value,
                 arrivalDate: document.getElementById('arrivalDate').value
             });
-            window.location.href = `/results.html?${params.toString()}`;
+            window.location.href = `/Results.html?${params.toString()}`;
         });
     </script>
 </body>
