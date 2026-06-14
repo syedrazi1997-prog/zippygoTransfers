@@ -87,6 +87,25 @@
         </div>
     </div>
 
+    <div class="fixed bottom-6 right-6 z-50 flex flex-col items-end">
+        <div id="liveChatWidgetContainer" class="bg-white w-80 sm:w-96 h-[400px] rounded-2xl shadow-2xl border flex flex-col overflow-hidden mb-4 hidden">
+            <div class="bg-slate-900 px-4 py-3 text-white flex items-center justify-between">
+                <h4 class="font-bold text-xs tracking-wide uppercase">Zippygo AI Support</h4>
+                <button id="minimizeChatWidgetBtn" class="text-slate-400 hover:text-white text-xs">✕</button>
+            </div>
+            <div id="liveChatLogContainer" class="flex-1 p-4 overflow-y-auto text-xs space-y-3 bg-slate-50">
+                <div class="bg-white border text-slate-700 p-3 rounded-xl max-w-[85%] mr-auto font-medium shadow-sm">👋 Need help picking a vehicle size, estimating luggage space, or adjusting dates? Ask me anything!</div>
+            </div>
+            <div class="p-3 border-t bg-white flex items-center space-x-2">
+                <input type="text" id="liveChatMessageInput" placeholder="Ask your question..." class="flex-1 p-2.5 border text-xs rounded-xl focus:outline-none bg-slate-50">
+                <button id="sendLiveChatMessageBtn" class="bg-emerald-500 text-white font-bold text-xs px-4 py-2.5 rounded-xl">Send</button>
+            </div>
+        </div>
+        <button id="toggleChatWidgetActivatorBtn" class="bg-slate-900 hover:bg-slate-800 text-white rounded-full p-4 shadow-2xl flex items-center justify-center border border-slate-800">
+            <span class="text-sm font-black uppercase tracking-wider px-1">💬 Live Assistant</span>
+        </button>
+    </div>
+
     <script>
         const stripe = Stripe('pk_test_51TYoQt4xSQ4u2uQiVgNXdjreUGfGFJOeAoSIBGzMa9sZc6g9ZhzpKTI16CS2RZZ0O1XFrSZ5yMD8gnACnqtOclWH00kI3gYAqx');
         const elements = stripe.elements();
@@ -107,8 +126,8 @@
             const target = document.getElementById('resultsInjectTarget');
             
             try {
-                // Point explicitly to your backend service domain URL
-                const response = await fetch('https://zippygotransfersbackend.onrender.com/api/search-transfers', {
+                // Connect directly to your live background app URL mapping
+                const response = await fetch('https://zippygotransfersbackend-wvw5.onrender.com/api/search-transfers', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ airport, destination, tripType, passengers })
@@ -123,7 +142,7 @@
                         card.innerHTML = `
                             <div>
                                 <h3 class="text-lg font-bold text-slate-800">${deal.vehicle}</h3>
-                                <p class="text-xs text-slate-400">Includes all baggage allocations & space profiles</p>
+                                <p class="text-xs text-slate-400">Includes all runway surcharges and luggage spacing profiles</p>
                             </div>
                             <div class="text-right">
                                 <p class="text-2xl font-black text-slate-900">£${deal.priceGbp}</p>
@@ -152,51 +171,35 @@
             document.getElementById('checkoutModalOverlay').classList.add('hidden');
         });
 
-        document.getElementById('checkoutCombinedForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const btn = document.getElementById('paySubmitBtn');
-            btn.disabled = true; btn.textContent = "Authorizing Funds Layer...";
+        // Chat Logic Integration Loop
+        const toggleChatWidgetActivatorBtn = document.getElementById('toggleChatWidgetActivatorBtn');
+        const liveChatWidgetContainer = document.getElementById('liveChatWidgetContainer');
+        const minimizeChatWidgetBtn = document.getElementById('minimizeChatWidgetBtn');
+        const liveChatMessageInput = document.getElementById('liveChatMessageInput');
+        const sendLiveChatMessageBtn = document.getElementById('sendLiveChatMessageBtn');
+        const liveChatLogContainer = document.getElementById('liveChatLogContainer');
+
+        toggleChatWidgetActivatorBtn.addEventListener('click', () => { liveChatWidgetContainer.classList.toggle('hidden'); liveChatMessageInput.focus(); });
+        minimizeChatWidgetBtn.addEventListener('click', () => liveChatWidgetContainer.classList.add('hidden'));
+
+        async function postMessage() {
+            const txt = liveChatMessageInput.value.trim(); if (!txt) return;
+            const ub = document.createElement('div'); ub.className = "bg-emerald-500 text-white p-3 rounded-xl max-w-[85%] ml-auto text-right break-words font-medium"; ub.textContent = txt;
+            liveChatLogContainer.appendChild(ub); liveChatMessageInput.value = '';
+            
+            const lb = document.createElement('div'); lb.className = "bg-white border text-slate-400 p-3 rounded-xl max-w-[85%] mr-auto animate-pulse"; lb.textContent = "Thinking...";
+            liveChatLogContainer.appendChild(lb); liveChatLogContainer.scrollTop = liveChatLogContainer.scrollHeight;
 
             try {
-                const response = await fetch('https://zippygotransfersbackend.onrender.com/api/create-stripe-payment-intent', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ amount: targetPrice, currency: 'GBP' })
-                });
-                const intent = await response.json();
-
-                const outcome = await stripe.confirmCardPayment(intent.clientSecret, {
-                    payment_method: { card: cardElement, billing_details: { name: document.getElementById('custFirstName').value + ' ' + document.getElementById('custLastName').value } }
-                });
-
-                if (outcome.error) {
-                    document.getElementById('payment-errors').textContent = outcome.error.message;
-                    document.getElementById('payment-errors').classList.remove('hidden');
-                } else {
-                    const bookingRef = "GT-" + Math.floor(100000 + Math.random() * 900000);
-                    const record = {
-                        id: bookingRef, name: document.getElementById('custFirstName').value + ' ' + document.getElementById('custLastName').value,
-                        email: document.getElementById('custEmail').value, phone: document.getElementById('custPhone').value,
-                        flight: document.getElementById('flightNo').value, vehicle: targetTitle, price: targetPrice,
-                        from: airport, to: destination, departureDate: arrivalDate, status: "Paid & Verified"
-                    };
-
-                    localStorage.setItem(bookingRef, JSON.stringify(record));
-                    document.getElementById('checkoutModalOverlay').classList.add('hidden');
-                    document.getElementById('resultsInjectTarget').classList.add('hidden');
-                    document.getElementById('resultsHeaderTitle').classList.add('hidden');
-
-                    document.getElementById('receiptSummaryBlock').innerHTML = `
-                        <p class="border-b pb-2"><span class="text-slate-400">Reference Key:</span> ${bookingRef}</p>
-                        <p><span class="text-slate-400">Lead Passenger:</span> ${record.name}</p>
-                        <p><span class="text-slate-400">Assigned Transit Fleet:</span> ${record.vehicle}</p>
-                        <p class="text-lg font-black text-slate-900 pt-2">Total Charged: £${targetPrice}</p>`;
-                    
-                    document.getElementById('successReceiptSection').classList.remove('hidden');
-                }
-            } catch (err) { console.error(err); }
-            finally { btn.disabled = false; btn.textContent = "Pay & Complete Reservation →"; }
-        });
+                const res = await fetch('https://zippygotransfersbackend-wvw5.onrender.com/api/gemini/chat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message: txt }) });
+                const d = await res.json(); lb.remove();
+                const sb = document.createElement('div'); sb.className = "bg-white border text-slate-700 p-3 rounded-xl max-w-[85%] mr-auto break-words font-medium shadow-sm"; sb.textContent = d.reply;
+                liveChatLogContainer.appendChild(sb);
+            } catch { lb.remove(); }
+            liveChatLogContainer.scrollTop = liveChatLogContainer.scrollHeight;
+        }
+        sendLiveChatMessageBtn.addEventListener('click', postMessage);
+        liveChatMessageInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') postMessage(); });
 
         window.onload = fetchQuotes;
     </script>
