@@ -1,6 +1,9 @@
-import { createClient } from "@supabase/supabase-js";
+import { Client, Databases, Account } from 'appwrite';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const client = new Client()
+    .setEndpoint(import.meta.env.VITE_APPWRITE_ENDPOINT)
+    .setProject(import.meta.env.VITE_APPWRITE_PROJECT_ID);
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+export const databases = new Databases(client);
+export const account = new Account(client);
+export { client };
