@@ -106,19 +106,22 @@ export function Checkout({ vehicle, searchParams, currency, onBack, onComplete }
       const bookingId = bookingData.$id;
       const bookingRef = bookingData.booking_ref;
 
-      // 3. Request order verification handling from your cloud/appwrite functions routing
-      const functionUrl = `${import.meta.env.VITE_APPWRITE_ENDPOINT}/functions/razorpay-payment`;
+      // 3. Updated Appwrite Cloud Function Execution Path URL
+      const functionUrl = `${import.meta.env.VITE_APPWRITE_ENDPOINT}/functions/${import.meta.env.VITE_APPWRITE_FUNCTION_ID}/executions`;
       const response = await fetch(functionUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          "X-Appwrite-Project": import.meta.env.VITE_APPWRITE_PROJECT_ID,
         },
         body: JSON.stringify({
-          action: "create_order",
-          amount: totalUSD,
-          currency: "USD",
-          bookingId,
-          bookingRef,
+          data: JSON.stringify({
+            action: "create_order",
+            amount: totalUSD,
+            currency: "USD",
+            bookingId,
+            bookingRef,
+          })
         }),
       });
 
@@ -129,7 +132,16 @@ export function Checkout({ vehicle, searchParams, currency, onBack, onComplete }
         return;
       }
 
-      const orderData = await response.json();
+      // Appwrite function responses return execution models, parse target outputs inside response string
+      const executionResult = await response.json();
+      const orderData = JSON.parse(executionResult.responseBody || executionResult.response || "{}");
+
+      if (orderData.error) {
+        setError(orderData.error);
+        setLoading(false);
+        return;
+      }
+
       const razorpay = new (window as any).Razorpay({
         key: orderData.keyId,
         amount: orderData.amount,
@@ -150,13 +162,16 @@ export function Checkout({ vehicle, searchParams, currency, onBack, onComplete }
             method: "POST",
             headers: {
               "Content-Type": "application/json",
+              "X-Appwrite-Project": import.meta.env.VITE_APPWRITE_PROJECT_ID,
             },
             body: JSON.stringify({
-              action: "verify_payment",
-              razorpayOrderId: payResponse.razorpay_order_id,
-              razorpayPaymentId: payResponse.razorpay_payment_id,
-              razorpaySignature: payResponse.razorpay_signature,
-              bookingId,
+              data: JSON.stringify({
+                action: "verify_payment",
+                razorpayOrderId: payResponse.razorpay_order_id,
+                razorpayPaymentId: payResponse.razorpay_payment_id,
+                razorpaySignature: payResponse.razorpay_signature,
+                bookingId,
+              })
             }),
           });
 
