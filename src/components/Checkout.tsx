@@ -99,9 +99,9 @@ export function Checkout({ vehicle, searchParams, currency, onBack, onComplete }
           customer_name: name,
           customer_email: email,
           customer_phone: phone,
-          amount: totalUSD,
+          amount: String(totalUSD),
           currency: currency,
-          amount_in_currency: totalUSD,
+          amount_in_currency: String(totalUSD),
           extras: JSON.stringify(extras),
           booking_ref: customBookingRef,
         }
