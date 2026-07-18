@@ -94,7 +94,7 @@ export function Checkout({ vehicle, searchParams, currency, onBack, onComplete }
           // Fixed Type Conflict Error: Converting Number to String for Appwrite schema validation
           passengers: String(searchParams.passengers),
           
-          luggage: vehicle.luggage,
+          luggage: String(vehicle.luggage),
           flight_number: flightNumber || null,
           customer_name: name,
           customer_email: email,
