@@ -1,14 +1,23 @@
-// 1. Add 'Functions' to your Appwrite import line
-import { Client, Databases, Account, Functions } from 'appwrite';
+// 1. Import 'functions' from your appwrite config file alongside databases
+import { databases, functions } from "../lib/appwrite"; 
 
-const client = new Client()
-    .setEndpoint(import.meta.env.VITE_APPWRITE_ENDPOINT)
-    .setProject(import.meta.env.VITE_APPWRITE_PROJECT_ID);
+// 2. Inside handlePay, replace the fetch code block (lines 114-130) with:
+const response = await functions.createExecution(
+  import.meta.env.VITE_APPWRITE_FUNCTION_ID,
+  JSON.stringify({
+    action: "create_order",
+    amount: totalUSD,
+    currency: "USD",
+    bookingId,
+    bookingRef,
+  })
+);
 
-export const databases = new Databases(client);
-export const account = new Account(client);
+// 3. Since the SDK parses the response model automatically:
+if (response.status !== 'completed') {
+  setError("Failed to initiate payment. Please try again.");
+  setLoading(false);
+  return;
+}
 
-// 2. Instantiate and export the Functions service instance
-export const functions = new Functions(client); 
-
-export { client };
+const orderData = JSON.parse(response.responseBody || "{}");
