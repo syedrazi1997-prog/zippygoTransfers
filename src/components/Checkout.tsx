@@ -79,7 +79,7 @@ export function Checkout({ vehicle, searchParams, currency, onBack, onComplete }
       // 2. Insert Document Into Appwrite
       const bookingData = await databases.createDocument(
         import.meta.env.VITE_APPWRITE_DATABASE_ID,
-        "bookings", // Collection ID
+        "bookings", 
         ID.unique(),
         {
           service_type: searchParams.serviceType,
@@ -121,9 +121,12 @@ export function Checkout({ vehicle, searchParams, currency, onBack, onComplete }
           data: JSON.stringify({
             action: "create_order",
             amount: totalUSD,
-            currency: "USD",
+            currency: currency === "INR" ? "INR" : "USD",
             bookingId,
             bookingRef,
+            customerName: name,
+            customerEmail: email,
+            customerPhone: phone,
           })
         }),
       });
@@ -135,7 +138,6 @@ export function Checkout({ vehicle, searchParams, currency, onBack, onComplete }
         return;
       }
 
-      // Appwrite function responses return execution models, parse target outputs inside response string
       const executionResult = await response.json();
       const orderData = JSON.parse(executionResult.responseBody || executionResult.response || "{}");
 
@@ -145,59 +147,19 @@ export function Checkout({ vehicle, searchParams, currency, onBack, onComplete }
         return;
       }
 
-      const razorpay = new (window as any).Razorpay({
-        key: orderData.keyId,
-        amount: orderData.amount,
-        currency: orderData.currency,
-        name: "ZippyGo",
-        description: `${vehicle.name} - ${searchParams.serviceType}`,
-        order_id: orderData.orderId,
-        prefill: {
-          name: name,
-          email: email,
-          contact: phone,
-        },
-        theme: {
-          color: "#0284c7",
-        },
-        handler: async function (payResponse: any) {
-          const verifyRes = await fetch(functionUrl, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "X-Appwrite-Project": import.meta.env.VITE_APPWRITE_PROJECT_ID,
-            },
-            body: JSON.stringify({
-              data: JSON.stringify({
-                action: "verify_payment",
-                razorpayOrderId: payResponse.razorpay_order_id,
-                razorpayPaymentId: payResponse.razorpay_payment_id,
-                razorpaySignature: payResponse.razorpay_signature,
-                bookingId,
-              })
-            }),
-          });
-
-          if (verifyRes.ok) {
-            onComplete(bookingRef);
-          } else {
-            setError("Payment verification failed. Please contact support.");
-            setLoading(false);
-          }
-        },
-        modal: {
-          ondismiss: function () {
-            setLoading(false);
-          },
-        },
+      // Initialize Cashfree Javascript Web SDK Dropin Core
+      const cashfree = await (window as any).Cashfree({
+        mode: "sandbox" // Change to "production" when switching Cashfree toggles live
       });
 
-      razorpay.on("payment.failed", function () {
-        setError("Payment failed. Please try again.");
-        setLoading(false);
+      await cashfree.checkout({
+        paymentSessionId: orderData.paymentSessionId,
+        redirectTarget: "_self" 
       });
 
-      razorpay.open();
+      // Appwrite webhook handlers or verification functions process completion workflows updates asynchronously
+      onComplete(bookingRef);
+
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong.");
       setLoading(false);
@@ -281,7 +243,7 @@ export function Checkout({ vehicle, searchParams, currency, onBack, onComplete }
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <InputField label="Full Name" value={name} onChange={setName} placeholder="John Doe" />
                 <InputField label="Email" value={email} onChange={setEmail} placeholder="john@example.com" type="email" />
-                <InputField label="Phone" value={phone} onChange={setPhone} placeholder="+1 234 567 890" />
+                <InputField label="Phone" value={phone} onChange={setPhone} placeholder="9876543210" />
                 <InputField label="Flight Number (optional)" value={flightNumber} onChange={setFlightNumber} placeholder="BA123" />
               </div>
             </div>
@@ -354,7 +316,7 @@ export function Checkout({ vehicle, searchParams, currency, onBack, onComplete }
               </button>
 
               <div className="mt-4 flex items-center justify-center gap-2 text-xs text-slate-400">
-                <ShieldCheck className="w-4 h-4 text-green-500" /> Secured by Razorpay · Free cancellation up to 24h
+                <ShieldCheck className="w-4 h-4 text-green-500" /> Secured by Cashfree · Free cancellation up to 24h
               </div>
             </div>
           </div>
