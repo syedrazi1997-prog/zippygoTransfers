@@ -32,7 +32,7 @@ module.exports = async function (context) {
                 body: JSON.stringify({
                     order_id: payload.bookingRef,
                     order_amount: numericAmount,
-                    order_currency: payload.currency === 'INR' ? 'INR' : 'USD',
+                    order_currency: 'INR',
                     customer_details: {
                         customer_id: payload.bookingId,
                         customer_name: payload.customerName || 'Guest User',
