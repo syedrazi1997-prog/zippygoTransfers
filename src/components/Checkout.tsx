@@ -90,10 +90,7 @@ export function Checkout({ vehicle, searchParams, currency, onBack, onComplete }
           return_date: searchParams.returnDate || null,
           vehicle_id: vehicle.id,
           vehicle_name: vehicle.name,
-          
-          // Fixed Type Conflict Error: Converting Number to String for Appwrite schema validation
           passengers: String(searchParams.passengers),
-          
           luggage: String(vehicle.luggage),
           flight_number: flightNumber || null,
           customer_name: name,
@@ -110,8 +107,10 @@ export function Checkout({ vehicle, searchParams, currency, onBack, onComplete }
       const bookingId = bookingData.$id;
       const bookingRef = bookingData.booking_ref;
 
-      // 3. Updated Appwrite Cloud Function Execution Path URL
-      const functionUrl = `${import.meta.env.VITE_APPWRITE_ENDPOINT}/functions/${import.meta.env.VITE_APPWRITE_FUNCTION_ID}/executions`;
+      // 3. Dynamic cleanup of Appwrite endpoint to avoid double-slash crashes
+      const cleanedEndpoint = import.meta.env.VITE_APPWRITE_ENDPOINT.replace(/\/+$/, "");
+      const functionUrl = `${cleanedEndpoint}/functions/${import.meta.env.VITE_APPWRITE_FUNCTION_ID}/executions`;
+
       const response = await fetch(functionUrl, {
         method: "POST",
         headers: {
@@ -214,6 +213,7 @@ export function Checkout({ vehicle, searchParams, currency, onBack, onComplete }
         <button onClick={onBack} className="flex items-center gap-2 text-slate-600 hover:text-slate-900 transition-colors text-sm font-medium mb-6">
           <ArrowLeft className="w-4 h-4" /> Back to results
         </button>
+
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
           <div className="lg:col-span-3 space-y-6">
             <div className="bg-white rounded-2xl border border-slate-200 p-6">
@@ -245,6 +245,7 @@ export function Checkout({ vehicle, searchParams, currency, onBack, onComplete }
                 <InfoRow label="Passengers">{searchParams.passengers}</InfoRow>
               </div>
             </div>
+
             <div className="bg-white rounded-2xl border border-slate-200 p-6">
               <h3 className="text-base font-semibold text-slate-900 mb-4 flex items-center gap-2">
                 <Sparkles className="w-4 h-4 text-sky-500" /> Add Extras
@@ -274,6 +275,7 @@ export function Checkout({ vehicle, searchParams, currency, onBack, onComplete }
                 })}
               </div>
             </div>
+
             <div className="bg-white rounded-2xl border border-slate-200 p-6">
               <h3 className="text-base font-semibold text-slate-900 mb-4"> Passenger Details </h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -284,6 +286,7 @@ export function Checkout({ vehicle, searchParams, currency, onBack, onComplete }
               </div>
             </div>
           </div>
+
           <div className="lg:col-span-2">
             <div className="bg-white rounded-2xl border border-slate-200 p-6 lg:sticky lg:top-24">
               <div className="relative h-40 rounded-xl overflow-hidden bg-slate-100 mb-4">
@@ -298,6 +301,7 @@ export function Checkout({ vehicle, searchParams, currency, onBack, onComplete }
                   <Briefcase className="w-4 h-4" /> {vehicle.luggage}
                 </span>
               </div>
+
               <div className="mt-5 space-y-2.5 text-sm">
                 <div className="flex justify-between text-slate-600">
                   <span>
@@ -321,6 +325,7 @@ export function Checkout({ vehicle, searchParams, currency, onBack, onComplete }
                   <span className="text-green-600 font-medium">Included</span>
                 </div>
               </div>
+
               <div className="mt-4 pt-4 border-t border-slate-200">
                 <div className="flex justify-between items-baseline">
                   <span className="text-base font-semibold text-slate-900">Total</span>
@@ -329,11 +334,13 @@ export function Checkout({ vehicle, searchParams, currency, onBack, onComplete }
                   </span>
                 </div>
               </div>
+
               {error && (
                 <div className="mt-4 p-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-700">
                   {error}
                 </div>
               )}
+
               <button onClick={handlePay} disabled={loading} className="w-full mt-5 flex items-center justify-center gap-2 bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white font-semibold py-3.5 rounded-xl transition-all shadow-lg shadow-sky-500/30 disabled:opacity-60">
                 {loading ? (
                   <>
@@ -345,6 +352,7 @@ export function Checkout({ vehicle, searchParams, currency, onBack, onComplete }
                   </>
                 )}
               </button>
+
               <div className="mt-4 flex items-center justify-center gap-2 text-xs text-slate-400">
                 <ShieldCheck className="w-4 h-4 text-green-500" /> Secured by Razorpay · Free cancellation up to 24h
               </div>
