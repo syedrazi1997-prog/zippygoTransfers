@@ -93,7 +93,8 @@ export function Footer({ onNavigate }: FooterProps) {
 
         <div className="mt-12 pt-8 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4">
           <p className="text-xs text-slate-500">
-            © 2025 ZippyGo. All rights reserved. Powered by Razorpay for secure payments.
+            © 2026 ZippyGo. All rights reserved. ZippyGo is owned and operated by 
+  <strong> [Zippygo Transfers]</strong>.
           </p>
           <div className="flex items-center gap-4 text-xs text-slate-500">
             <button onClick={() => onNavigate("privacy")} className="hover:text-white transition-colors">
