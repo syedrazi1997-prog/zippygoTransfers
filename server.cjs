@@ -1,6 +1,6 @@
 const express = require("express");
 const cors = require("cors");
-const { Cashfree } = require("cashfree-pg");
+const axios = require("axios");
 
 const app = express();
 
@@ -8,52 +8,64 @@ app.use(express.json());
 app.use(cors());
 
 app.get("/", (req, res) => {
-  res.send("ZippyGo Backend Running");
+  res.send("Backend Running");
 });
-
-// Initialize Cashfree
-const cashfree = new Cashfree(
-  Cashfree.SANDBOX,
-  process.env.CASHFREE_APP_ID.trim(),
-  process.env.CASHFREE_SECRET_KEY.trim()
-);
 
 app.post("/api/create-order", async (req, res) => {
   try {
-    const { amount, customer } = req.body;
+    const appId = process.env.CASHFREE_APP_ID?.trim();
+    const secret = process.env.CASHFREE_SECRET_KEY?.trim();
+    const baseUrl =
+      process.env.CASHFREE_ENV?.trim() ||
+      "https://sandbox.cashfree.com/pg";
 
-    const request = {
-      order_id: `order_${Date.now()}`,
-      order_amount: Number(amount),
+    console.log("Base URL:", baseUrl);
+    console.log("App ID:", appId);
+    console.log("Secret Exists:", !!secret);
+
+    const payload = {
+      order_amount: Number(req.body.amount),
       order_currency: "INR",
-
       customer_details: {
-        customer_id: `cust_${Date.now()}`,
-        customer_name: customer?.name || "Guest User",
-        customer_email: customer?.email || "guest@test.com",
-        customer_phone: (customer?.phone || "9999999999")
-          .replace(/\D/g, "")
-          .slice(-10),
+        customer_id: "cust_" + Date.now(),
+        customer_name: req.body.customer?.name || "Guest",
+        customer_email:
+          req.body.customer?.email || "guest@test.com",
+        customer_phone:
+          (req.body.customer?.phone || "9999999999")
+            .replace(/\D/g, "")
+            .slice(-10),
       },
-
       order_meta: {
         return_url:
           "https://zippygotransfers.onrender.com/#/confirmation?order_id={order_id}",
       },
     };
 
-    const response = await cashfree.PGCreateOrder(request);
+    console.log(payload);
 
-    return res.json({
-      payment_session_id: response.data.payment_session_id,
-      order_id: response.data.order_id,
-    });
+    const response = await axios.post(
+      `${baseUrl}/orders`,
+      payload,
+      {
+        headers: {
+          "x-client-id": appId,
+          "x-secret-key": secret,
+          "x-api-version": "2023-08-01",
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    console.log(response.data);
+
+    res.json(response.data);
   } catch (err) {
-    console.error("Cashfree Error");
-    console.error("Status:", err.response?.status);
-    console.error("Body:", err.response?.data);
+    console.log("STATUS:", err.response?.status);
+    console.log("DATA:", err.response?.data);
+    console.log("MESSAGE:", err.message);
 
-    return res.status(err.response?.status || 500).json({
+    res.status(err.response?.status || 500).json({
       error: err.response?.data || err.message,
     });
   }
@@ -62,5 +74,5 @@ app.post("/api/create-order", async (req, res) => {
 const PORT = process.env.PORT || 10000;
 
 app.listen(PORT, "0.0.0.0", () => {
-  console.log(`Server running on ${PORT}`);
+  console.log("Server started on", PORT);
 });
