@@ -20,7 +20,11 @@ type View =
   | "manage_booking"
   | "cancellation"
   | "terms"
-  | "privacy";
+  | "privacy"
+  | "about"
+  | "careers"
+  | "press"
+  | "blog";
 
 // Inline Policy Components tailored for Cashfree Merchant Onboarding Compliance
 function CancellationPolicyView() {
