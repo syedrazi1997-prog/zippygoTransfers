@@ -26,7 +26,7 @@ export function Footer({ onNavigate }: FooterProps) {
   };
 
   return (
-    <footer className="bg-slate-900 text-slate-400">
+    <footer className="bg-slate-900 text-slate-400 mt-auto w-full">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14">
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
           <div className="lg:col-span-2">
@@ -44,17 +44,14 @@ export function Footer({ onNavigate }: FooterProps) {
               </div>
             </div>
             <p className="text-sm leading-relaxed max-w-sm">
-              Your trusted partner for airport transfers, car hire, and parking in 180+ countries.
-              Book in minutes, travel with confidence.
+              Your trusted partner for airport transfers, car hire, and parking in 180+ countries. Book in minutes, travel with confidence.
             </p>
             <div className="mt-5 space-y-2 text-sm">
               <div className="flex items-center gap-2">
-                <Globe className="w-4 h-4" />
-                Available in 12+ currencies
+                <Globe className="w-4 h-4" /> Available in 12+ currencies
               </div>
               <div className="flex items-center gap-2">
-                <MessageCircle className="w-4 h-4" />
-                Live chat support 24/7
+                <MessageCircle className="w-4 h-4" /> Live chat support 24/7
               </div>
             </div>
             <div className="flex gap-3 mt-5">
@@ -93,17 +90,25 @@ export function Footer({ onNavigate }: FooterProps) {
 
         <div className="mt-12 pt-8 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4">
           <p className="text-xs text-slate-500">
-            © 2026 ZippyGo. All rights reserved. ZippyGo is owned and operated by 
-  <strong> [Zippygo Transfers]</strong>.
+            © 2026 ZippyGo. All rights reserved. ZippyGo is owned and operated by <strong>Zippygo Transfers</strong>.
           </p>
           <div className="flex items-center gap-4 text-xs text-slate-500">
-            <button onClick={() => onNavigate("privacy")} className="hover:text-white transition-colors">
+            <button
+              onClick={() => onNavigate("privacy")}
+              className="hover:text-white transition-colors"
+            >
               Privacy Policy
             </button>
-            <button onClick={() => onNavigate("terms")} className="hover:text-white transition-colors">
+            <button
+              onClick={() => onNavigate("terms")}
+              className="hover:text-white transition-colors"
+            >
               Terms
             </button>
-            <button onClick={() => onNavigate("cookies")} className="hover:text-white transition-colors">
+            <button
+              onClick={() => onNavigate("cookies")}
+              className="hover:text-white transition-colors"
+            >
               Cookies
             </button>
           </div>
