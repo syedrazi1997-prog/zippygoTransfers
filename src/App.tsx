@@ -351,7 +351,7 @@ export default function App() {
         {view === "privacy" && <PrivacyPolicyView />}
       </main>
 
-      <Footer onNavigateView={handleNavigateView} />
+      <Footer onNavigate={handleNavigateView} />
       <ChatWidget />
     </div>
   );
