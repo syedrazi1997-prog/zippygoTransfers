@@ -105,6 +105,9 @@ export function Checkout({
     setLoading(true);
 
     try {
+      // Clean phone number (strip spaces/symbols, extract last 10 digits)
+      const cleanPhone = phone.replace(/[^0-9]/g, "").slice(-10);
+
       // 1. Generate unique booking reference
       const customBookingRef = `ZGO-${Math.random()
         .toString(36)
@@ -154,7 +157,7 @@ export function Checkout({
             customer: {
               name: name,
               email: email,
-              phone: phone,
+              phone: cleanPhone || "9999999999",
             },
           }),
         }
@@ -163,12 +166,16 @@ export function Checkout({
       const data = await response.json();
 
       if (!response.ok || !data.payment_session_id) {
-        throw new Error(data.error || "Failed to initiate payment order.");
+        const errorMsg =
+          typeof data.error === "string"
+            ? data.error
+            : data.error?.message || "Failed to initiate payment order.";
+        throw new Error(errorMsg);
       }
 
       // 4. Initialize Cashfree Web SDK
       const cashfree = await (window as any).Cashfree({
-        mode: "sandbox", // Switch to "production" when live in Cashfree
+        mode: "sandbox", // Switch to "production" when going live
       });
 
       // 5. Trigger Cashfree Checkout Modal
@@ -178,8 +185,13 @@ export function Checkout({
       });
 
       onComplete(bookingRef);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong.");
+    } catch (err: any) {
+      console.error("Payment Process Error:", err);
+      const message =
+        typeof err === "string"
+          ? err
+          : err?.message || JSON.stringify(err) || "Something went wrong.";
+      setError(message);
     } finally {
       setLoading(false);
     }
