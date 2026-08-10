@@ -5,11 +5,19 @@ const axios = require("axios");
 const app = express();
 
 app.use(express.json({ limit: "1mb" }));
-app.use(cors({
-  origin: true,
-  methods: ["GET", "POST", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
-}));
+
+// Enable CORS for all incoming origins, methods, and headers
+app.use(
+  cors({
+    origin: "*",
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+    credentials: false,
+  })
+);
+
+// Explicitly handle CORS preflight options requests
+app.options("*", cors());
 
 app.get("/", (_req, res) => {
   res.json({
@@ -35,15 +43,12 @@ app.post("/api/create-payflow-checkout", async (req, res) => {
   try {
     const apiUrl = (process.env.PAYFLOW_API_URL || "").trim().replace(/\/+$/, "");
     const apiKey = (process.env.PAYFLOW_API_KEY || "").trim();
-    const defaultReturnUrl =
-      (process.env.ZIPPYGO_RETURN_URL ||
-        "https://zippygotransfers.onrender.com/")
-        .trim();
+    const defaultReturnUrl = (process.env.ZIPPYGO_RETURN_URL || "https://zippygotransfers.onrender.com/")
+      .trim();
 
     if (!apiUrl || !apiKey) {
       return res.status(500).json({
-        error:
-          "PayFlow is not configured. Set PAYFLOW_API_URL and PAYFLOW_API_KEY on the backend.",
+        error: "PayFlow is not configured. Set PAYFLOW_API_URL and PAYFLOW_API_KEY on the backend.",
       });
     }
 
@@ -64,19 +69,13 @@ app.post("/api/create-payflow-checkout", async (req, res) => {
       return res.status(400).json({ error: "Invalid currency." });
     }
 
-    const returnUrl =
-      `${defaultReturnUrl.replace(/\/+$/, "")}/?payment_status=success&booking_ref=${encodeURIComponent(bookingRef)}`;
+    const returnUrl = `${defaultReturnUrl.replace(/\/+$/, "")}/?payment_status=success&booking_ref=${encodeURIComponent(bookingRef)}`;
 
     const payload = {
       amount,
       currency,
-      title:
-        String(req.body?.title || "ZippyGo Booking").slice(0, 100),
-      description:
-        String(req.body?.description || `ZippyGo booking ${bookingRef}`).slice(
-          0,
-          500
-        ),
+      title: String(req.body?.title || "ZippyGo Booking").slice(0, 100),
+      description: String(req.body?.description || `ZippyGo booking ${bookingRef}`).slice(0, 500),
       customer: {
         name: String(customer.name || "Guest").slice(0, 120),
         email: String(customer.email || "").slice(0, 200),
@@ -87,70 +86,41 @@ app.post("/api/create-payflow-checkout", async (req, res) => {
       return_url: returnUrl,
     };
 
-    const response = await axios.post(
-      `${apiUrl}/payment-links`,
-      payload,
-      {
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
-          Accept: "application/json",
-        },
-        timeout: 20000,
-        validateStatus: () => true,
-      }
-    );
+    const response = await axios.post(`${apiUrl}/payment-links`, payload, {
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      timeout: 20000,
+      validateStatus: () => true,
+    });
 
     const rawData = response.data || {};
-    // Some PayFlow deployments wrap the API response in `data`. Normalize it
-    // here so ZippyGo is not dependent on one exact response shape.
-    const data = rawData?.data && typeof rawData.data === "object"
-      ? { ...rawData, ...rawData.data }
-      : rawData;
+
+    // Normalize wrapped `data` responses
+    const data = rawData?.data && typeof rawData.data === "object" ? { ...rawData, ...rawData.data } : rawData;
 
     if (response.status < 200 || response.status >= 300) {
-      const providerMessage =
-        data?.error?.message ||
-        data?.error ||
-        data?.message ||
-        `PayFlow returned HTTP ${response.status}.`;
+      const providerMessage = data?.error?.message || data?.error || data?.message || `PayFlow returned HTTP ${response.status}.`;
       return res.status(502).json({
         error: String(providerMessage),
         provider_status: response.status,
       });
     }
 
-    // PayFlow's canonical response contains link_id + checkout_url. Older
-    // deployments may return only link_id even though the hosted checkout
-    // has been created successfully. In that case build the hosted URL from
-    // the public PayFlow URL instead of incorrectly failing the payment.
-    let checkoutUrl =
-      data.checkout_url ||
-      data.url ||
-      data.hosted_checkout_url ||
-      data.checkoutUrl ||
-      data.payment_url;
-
-    const linkId =
-      data.link_id ||
-      data.linkId ||
-      data.payment_link_id ||
-      data.paymentLinkId ||
-      data.id;
+    let checkoutUrl = data.checkout_url || data.url || data.hosted_checkout_url || data.checkoutUrl || data.payment_url;
+    const linkId = data.link_id || data.linkId || data.payment_link_id || data.paymentLinkId || data.id;
 
     if (!checkoutUrl && linkId) {
-      const payflowPublicUrl = (
-        process.env.PAYFLOW_PUBLIC_URL ||
-        apiUrl.replace(/\/api\/v1$/i, "")
-      ).replace(/\/+$/, "");
+      const payflowPublicUrl = (process.env.PAYFLOW_PUBLIC_URL || apiUrl.replace(/\/api\/v1$/i, "")).replace(/\/+$/, "");
       checkoutUrl = `${payflowPublicUrl}/checkout/${encodeURIComponent(String(linkId))}`;
     }
 
     if (!checkoutUrl) {
       console.error("PayFlow returned HTTP 200 without checkout URL or link ID:", rawData);
       return res.status(502).json({
-        error:
-          "PayFlow created a response but did not provide a checkout URL or payment-link ID. Check the PayFlow API deployment and /api/v1/payment-links response.",
+        error: "PayFlow created a response but did not provide a checkout URL or payment-link ID. Check the PayFlow API deployment and /api/v1/payment-links response.",
         provider_status: response.status,
       });
     }
@@ -167,25 +137,18 @@ app.post("/api/create-payflow-checkout", async (req, res) => {
   } catch (err) {
     const status = err.response?.status || 500;
     const details = err.response?.data;
-
     console.error(
       "PayFlow checkout error:",
       status,
       typeof details === "string" ? details : JSON.stringify(details || err.message)
     );
-
     return res.status(status).json({
-      error:
-        details?.error ||
-        details?.message ||
-        err.message ||
-        "Unable to create PayFlow checkout.",
+      error: details?.error || details?.message || err.message || "Unable to create PayFlow checkout.",
     });
   }
 });
 
 const PORT = process.env.PORT || 10000;
-
 app.listen(PORT, "0.0.0.0", () => {
-  console.log(`ZippyGo PayFlow backend listening on ${PORT}`);
+  console.log(`ZippyGo PayFlow backend listening on port ${PORT}`);
 });
