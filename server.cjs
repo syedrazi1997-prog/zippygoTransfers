@@ -448,13 +448,24 @@ app.post("/api/create-payflow-checkout", async (req, res) => {
 
     const extracted = extractCheckoutInfo(data);
 
+    // Header fallback: some providers return a redirect/location header instead of a body URL
+    const headerUrl = (response && response.headers) ? (
+      response.headers.location ||
+      response.headers["content-location"] ||
+      response.headers["x-checkout-url"] ||
+      response.headers["x-payment-url"] ||
+      response.headers["x-link-url"] ||
+      null
+    ) : null;
+
     let checkoutUrl =
       extracted.checkoutUrl ||
       data.checkout_url ||
       data.url ||
       data.hosted_checkout_url ||
       data.checkoutUrl ||
-      data.payment_url;
+      data.payment_url ||
+      headerUrl;
 
     const linkId =
       extracted.linkId ||
@@ -480,7 +491,9 @@ app.post("/api/create-payflow-checkout", async (req, res) => {
       // Log the full raw response for debugging (safe in server logs; do NOT leak to clients)
       console.error(
         "PayFlow returned HTTP 200 without checkout URL or link ID:",
-        JSON.stringify(rawData, null, 2)
+        JSON.stringify(rawData, null, 2),
+        "response headers:",
+        JSON.stringify(response.headers || {}, null, 2)
       );
 
       // Try to mark the booking as failed so it doesn't remain pending indefinitely.
