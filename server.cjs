@@ -369,6 +369,11 @@ app.post("/api/create-payflow-checkout", async (req, res) => {
         "payment_url",
         "paymentUrl",
         "url",
+        "redirect_url",
+        "redirectUrl",
+        "public_url",
+        "payment_link_url",
+        "paymentLinkUrl",
       ];
       const idKeys = [
         "link_id",
@@ -376,6 +381,8 @@ app.post("/api/create-payflow-checkout", async (req, res) => {
         "payment_link_id",
         "paymentLinkId",
         "id",
+        "payment_id",
+        "paymentId",
       ];
 
       for (const k of urlKeys) {
@@ -396,16 +403,41 @@ app.post("/api/create-payflow-checkout", async (req, res) => {
           const s = value.trim();
           if (!result.checkoutUrl && /^https?:\/\//i.test(s)) {
             // prefer URLs that include checkout/payment paths
-            if (/checkout|payment|pay|hosted|payment_link|payment-link/i.test(s) || !result.checkoutUrl) {
+            if (/checkout|payment|pay|hosted|payment_link|payment-link|redirect|return/i.test(s) || !result.checkoutUrl) {
               result.checkoutUrl = s;
             }
           } else if (!result.linkId && /^[A-Za-z0-9_\-]{6,}$/.test(s)) {
             // a plausible link id (alphanumeric, underscores/hyphens)
             result.linkId = s;
+          } else if (!result.linkId && /^\d{6,}$/.test(s)) {
+            // some providers return numeric-only IDs - accept long numeric ids
+            result.linkId = s;
           }
         } else if (Array.isArray(value)) {
-          for (const v of value) visit(v);
+          for (const v of value) {
+            // If array contains objects like { url, href, id }
+            visit(v);
+            if (result.checkoutUrl && result.linkId) return;
+          }
         } else if (typeof value === "object") {
+          // Common patterns: { url: '...', href: '...', link: '...' }
+          const candidateUrl = value.url || value.href || value.checkout_url || value.payment_url || value.redirect_url || value.public_url;
+          if (!result.checkoutUrl && typeof candidateUrl === "string") {
+            visit(candidateUrl);
+          }
+
+          const candidateId = value.id || value.link_id || value.linkId || value.payment_link_id || value.paymentId || value.payment_id;
+          if (!result.linkId && typeof candidateId === "string") {
+            visit(candidateId);
+          }
+
+          // Also detect arrays under common container keys
+          const possibleArrays = ["links", "payment_links", "paymentLinks", "items", "data", "results"];
+          for (const key of possibleArrays) {
+            if (value[key]) visit(value[key]);
+            if (result.checkoutUrl && result.linkId) return;
+          }
+
           for (const k of Object.keys(value)) visit(value[k]);
         }
       }
