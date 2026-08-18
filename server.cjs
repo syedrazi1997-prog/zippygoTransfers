@@ -491,6 +491,54 @@ app.post("/api/create-payflow-checkout", async (req, res) => {
   }
 });
 
+// Debugging endpoint: proxy a payment-links creation request to PayFlow and
+// return the raw provider response. Requires X-Debug-Token header to match
+// process.env.DEBUG_TOKEN. This is intended for short-lived debugging only.
+app.post("/api/debug/payflow", async (req, res) => {
+  try {
+    const provided = String(req.header("X-Debug-Token") || "");
+    const expected = String(process.env.DEBUG_TOKEN || "");
+
+    if (!expected || provided !== expected) {
+      return res.status(403).json({ error: "Forbidden. Invalid debug token." });
+    }
+
+    const apiUrl = env("PAYFLOW_API_URL").replace(/\/+$/, "");
+    const apiKey = env("PAYFLOW_API_KEY");
+
+    if (!apiUrl || !apiKey) {
+      return res.status(500).json({ error: "PayFlow is not configured on the backend." });
+    }
+
+    const payload = req.body || {};
+
+    const response = await axios.post(`${apiUrl}/payment-links`, payload, {
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      timeout: 20000,
+      validateStatus: () => true,
+    });
+
+    // Return the raw provider response (status, headers, body) so it can be
+    // inspected. Caller must keep this confidential.
+    return res.status(200).json({
+      ok: true,
+      provider_status: response.status,
+      provider_headers: response.headers,
+      provider_data: response.data,
+    });
+  } catch (error) {
+    console.error("PayFlow debug proxy error:", error.message, error.response?.data);
+    return res.status(error.response?.status || 500).json({
+      error: error.message || "Debug proxy failure",
+      provider_data: error.response?.data,
+    });
+  }
+});
+
 app.post("/api/bookings/find", async (req, res) => {
   try {
     const bookingRef = String(req.body?.bookingRef || "").trim().toUpperCase();
