@@ -357,7 +357,67 @@ app.post("/api/create-payflow-checkout", async (req, res) => {
       });
     }
 
+    // Robust extraction for checkout URL / link id: check known keys AND deep-scan nested objects.
+    function extractCheckoutInfo(obj) {
+      const result = { checkoutUrl: null, linkId: null };
+
+      // Known keys to check first (top-level)
+      const urlKeys = [
+        "checkout_url",
+        "checkoutUrl",
+        "hosted_checkout_url",
+        "payment_url",
+        "paymentUrl",
+        "url",
+      ];
+      const idKeys = [
+        "link_id",
+        "linkId",
+        "payment_link_id",
+        "paymentLinkId",
+        "id",
+      ];
+
+      for (const k of urlKeys) {
+        if (!result.checkoutUrl && obj && typeof obj[k] === "string") {
+          result.checkoutUrl = obj[k];
+        }
+      }
+      for (const k of idKeys) {
+        if (!result.linkId && obj && typeof obj[k] === "string") {
+          result.linkId = obj[k];
+        }
+      }
+
+      // Deep scan: find first values that look like URLs or plausible IDs
+      function visit(value) {
+        if (!value || (result.checkoutUrl && result.linkId)) return;
+        if (typeof value === "string") {
+          const s = value.trim();
+          if (!result.checkoutUrl && /^https?:\/\//i.test(s)) {
+            // prefer URLs that include checkout/payment paths
+            if (/checkout|payment|pay|hosted|payment_link|payment-link/i.test(s) || !result.checkoutUrl) {
+              result.checkoutUrl = s;
+            }
+          } else if (!result.linkId && /^[A-Za-z0-9_\-]{6,}$/.test(s)) {
+            // a plausible link id (alphanumeric, underscores/hyphens)
+            result.linkId = s;
+          }
+        } else if (Array.isArray(value)) {
+          for (const v of value) visit(v);
+        } else if (typeof value === "object") {
+          for (const k of Object.keys(value)) visit(value[k]);
+        }
+      }
+
+      visit(obj);
+      return result;
+    }
+
+    const extracted = extractCheckoutInfo(data);
+
     let checkoutUrl =
+      extracted.checkoutUrl ||
       data.checkout_url ||
       data.url ||
       data.hosted_checkout_url ||
@@ -365,12 +425,14 @@ app.post("/api/create-payflow-checkout", async (req, res) => {
       data.payment_url;
 
     const linkId =
+      extracted.linkId ||
       data.link_id ||
       data.linkId ||
       data.payment_link_id ||
       data.paymentLinkId ||
       data.id;
 
+    // Construct a public checkout URL if only a link id is present
     if (!checkoutUrl && linkId) {
       const payflowPublicUrl = env(
         "PAYFLOW_PUBLIC_URL",
@@ -383,10 +445,19 @@ app.post("/api/create-payflow-checkout", async (req, res) => {
     }
 
     if (!checkoutUrl) {
+      // Log the full raw response for debugging (safe in server logs; do NOT leak to clients)
       console.error(
         "PayFlow returned HTTP 200 without checkout URL or link ID:",
-        rawData
+        JSON.stringify(rawData, null, 2)
       );
+
+      // Try to mark the booking as failed so it doesn't remain pending indefinitely.
+      try {
+        await updateBookingDocument(bookingRef, { payment_status: "failed" });
+      } catch (updateError) {
+        console.error("Unable to mark failed PayFlow booking:", updateError.message);
+      }
+
       return res.status(502).json({
         error:
           "PayFlow created a response but did not provide a checkout URL or payment-link ID.",
