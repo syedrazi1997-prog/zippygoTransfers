@@ -5,7 +5,6 @@ const axios = require("axios");
 const app = express();
 
 app.use(express.json({ limit: "1mb" }));
-
 app.use(
   cors({
     origin: "*",
@@ -14,7 +13,6 @@ app.use(
     credentials: false,
   })
 );
-
 app.options("*", cors());
 
 function env(name, fallback = "") {
@@ -34,18 +32,15 @@ function appwriteConfig() {
 function requireAppwriteConfig() {
   const config = appwriteConfig();
   const missing = [];
-
   if (!config.projectId) missing.push("APPWRITE_PROJECT_ID");
   if (!config.apiKey) missing.push("APPWRITE_API_KEY");
   if (!config.databaseId) missing.push("APPWRITE_DATABASE_ID");
   if (!config.collectionId) missing.push("APPWRITE_BOOKINGS_COLLECTION_ID");
-
   if (missing.length) {
     const error = new Error(`Appwrite is not configured. Missing: ${missing.join(", ")}`);
     error.statusCode = 500;
     throw error;
   }
-
   return config;
 }
 
@@ -73,16 +68,13 @@ async function appwriteRequest(method, path, config, data, params) {
 function appwriteErrorMessage(response) {
   const data = response?.data || {};
   return (
-    data.message ||
-    data.error ||
-    `Appwrite returned HTTP ${response?.status ?? "unknown"}.`
+    data.message || data.error || `Appwrite returned HTTP ${response?.status ?? "unknown"}.`
   );
 }
 
 async function createBookingDocument(booking) {
   const config = requireAppwriteConfig();
   const documentId = booking.bookingRef;
-
   const response = await appwriteRequest(
     "POST",
     `/databases/${encodeURIComponent(config.databaseId)}/collections/${encodeURIComponent(
@@ -94,20 +86,17 @@ async function createBookingDocument(booking) {
       data: booking.data,
     }
   );
-
   if (response.status < 200 || response.status >= 300) {
     const error = new Error(appwriteErrorMessage(response));
     error.statusCode = response.status === 409 ? 409 : 502;
     error.providerStatus = response.status;
     throw error;
   }
-
   return response.data;
 }
 
 async function getBookingDocument(bookingRef) {
   const config = requireAppwriteConfig();
-
   const response = await appwriteRequest(
     "GET",
     `/databases/${encodeURIComponent(config.databaseId)}/collections/${encodeURIComponent(
@@ -115,20 +104,17 @@ async function getBookingDocument(bookingRef) {
     )}/documents/${encodeURIComponent(bookingRef)}`,
     config
   );
-
   if (response.status < 200 || response.status >= 300) {
     const error = new Error(appwriteErrorMessage(response));
     error.statusCode = response.status === 404 ? 404 : 502;
     error.providerStatus = response.status;
     throw error;
   }
-
   return response.data;
 }
 
 async function updateBookingDocument(bookingRef, data) {
   const config = requireAppwriteConfig();
-
   const response = await appwriteRequest(
     "PATCH",
     `/databases/${encodeURIComponent(config.databaseId)}/collections/${encodeURIComponent(
@@ -137,14 +123,12 @@ async function updateBookingDocument(bookingRef, data) {
     config,
     { data }
   );
-
   if (response.status < 200 || response.status >= 300) {
     const error = new Error(appwriteErrorMessage(response));
     error.statusCode = 502;
     error.providerStatus = response.status;
     throw error;
   }
-
   return response.data;
 }
 
@@ -162,7 +146,6 @@ app.get("/health", (_req, res) => {
   const appwriteConfigured = Boolean(
     aw.projectId && aw.apiKey && aw.databaseId && aw.collectionId
   );
-
   res.json({
     ok: true,
     gateway: "PayFlow",
@@ -174,7 +157,6 @@ app.get("/health", (_req, res) => {
 app.get("/api/appwrite/status", async (_req, res) => {
   try {
     const config = requireAppwriteConfig();
-
     const response = await appwriteRequest(
       "GET",
       `/databases/${encodeURIComponent(config.databaseId)}/collections/${encodeURIComponent(
@@ -182,7 +164,6 @@ app.get("/api/appwrite/status", async (_req, res) => {
       )}`,
       config
     );
-
     if (response.status < 200 || response.status >= 300) {
       return res.status(502).json({
         ok: false,
@@ -190,7 +171,6 @@ app.get("/api/appwrite/status", async (_req, res) => {
         provider_status: response.status,
       });
     }
-
     return res.json({
       ok: true,
       database_id: config.databaseId,
@@ -208,7 +188,6 @@ app.get("/api/appwrite/status", async (_req, res) => {
 
 app.post("/api/create-payflow-checkout", async (req, res) => {
   let bookingRef = "";
-
   try {
     let rawApiUrl = env("PAYFLOW_API_URL").replace(/\/+$/, "");
     const apiKey = env("PAYFLOW_API_KEY");
@@ -219,12 +198,10 @@ app.post("/api/create-payflow-checkout", async (req, res) => {
 
     if (!rawApiUrl || !apiKey) {
       return res.status(500).json({
-        error:
-          "PayFlow is not configured. Set PAYFLOW_API_URL and PAYFLOW_API_KEY on the backend.",
+        error: "PayFlow is not configured. Set PAYFLOW_API_URL and PAYFLOW_API_KEY on the backend.",
       });
     }
 
-    // Strip trailing /api/v1 or /api to prevent duplication
     const baseUrl = rawApiUrl.replace(/\/(api\/v1|api)$/i, "");
     const targetEndpoint = `${baseUrl}/api/v1/payment-links`;
 
@@ -232,17 +209,16 @@ app.post("/api/create-payflow-checkout", async (req, res) => {
     const amount = Math.round(Number(body.amount) * 100) / 100;
     const currency = String(body.currency || "USD").toUpperCase();
     bookingRef = String(body.bookingRef || "").trim();
+
     const customer = body.customer || {};
     const booking = body.booking || {};
 
     if (!Number.isFinite(amount) || amount <= 0) {
       return res.status(400).json({ error: "Invalid payment amount." });
     }
-
     if (!bookingRef || !/^[A-Z0-9-]{6,40}$/.test(bookingRef)) {
       return res.status(400).json({ error: "Invalid booking reference." });
     }
-
     if (!/^[A-Z]{3}$/.test(currency)) {
       return res.status(400).json({ error: "Invalid currency." });
     }
@@ -273,9 +249,7 @@ app.post("/api/create-payflow-checkout", async (req, res) => {
       amount_in_currency: String(amount),
       customer_phone: customerPhone || null,
       flight_number: booking.flight_number ? String(booking.flight_number) : null,
-      extras: typeof booking.extras === "string"
-        ? booking.extras
-        : JSON.stringify(booking.extras || {}),
+      extras: typeof booking.extras === "string" ? booking.extras : JSON.stringify(booking.extras || {}),
       booking_ref: bookingRef,
       payment_status: "pending",
     };
@@ -294,25 +268,18 @@ app.post("/api/create-payflow-checkout", async (req, res) => {
       });
     }
 
-    const returnUrl =
-      `${defaultReturnUrl.replace(/\/+$/, "")}/?payment_status=success&booking_ref=${encodeURIComponent(
-        bookingRef
-      )}`;
+    const returnUrl = `${defaultReturnUrl.replace(/\/+$/, "")}/?payment_status=success&booking_ref=${encodeURIComponent(bookingRef)}`;
 
+    // Revised payload to comply with PayFlow API requirements
     const payload = {
-      amount,
-      currency,
-      title: String(body.title || "ZippyGo Booking").slice(0, 100),
-      description: String(
-        body.description || `ZippyGo booking ${bookingRef}`
-      ).slice(0, 500),
-      customer: {
-        name: customerName.slice(0, 120),
-        email: customerEmail.slice(0, 200),
-        phone: customerPhone,
-      },
-      max_uses: 1,
+      title: String(body.title || `ZippyGo Booking ${bookingRef}`).slice(0, 100),
+      description: String(body.description || `ZippyGo Airport Transfer Booking - Ref: ${bookingRef}`).slice(0, 500),
+      amount: Math.round(amount * 100), // Converted to base unit/cents (e.g., 3069 -> 306900)
+      currency: currency.toLowerCase(),
+      customer_email: customerEmail,
+      customer_name: customerName,
       return_url: returnUrl,
+      max_uses: 1,
     };
 
     console.log("Posting to PayFlow Endpoint:", targetEndpoint);
@@ -331,10 +298,7 @@ app.post("/api/create-payflow-checkout", async (req, res) => {
     console.log("PayFlow Raw Response Body:", JSON.stringify(response.data));
 
     const rawData = response.data || {};
-    const data =
-      rawData?.data && typeof rawData.data === "object"
-        ? { ...rawData, ...rawData.data }
-        : rawData;
+    const data = rawData?.data && typeof rawData.data === "object" ? { ...rawData, ...rawData.data } : rawData;
 
     if (response.status < 200 || response.status >= 300) {
       try {
@@ -342,13 +306,7 @@ app.post("/api/create-payflow-checkout", async (req, res) => {
       } catch (updateError) {
         console.error("Unable to mark failed PayFlow booking:", updateError.message);
       }
-
-      const providerMessage =
-        data?.error?.message ||
-        data?.error ||
-        data?.message ||
-        `PayFlow returned HTTP ${response.status}.`;
-
+      const providerMessage = data?.error?.message || data?.error || data?.message || `PayFlow returned HTTP ${response.status}.`;
       return res.status(502).json({
         error: String(providerMessage),
         provider_status: response.status,
@@ -357,38 +315,22 @@ app.post("/api/create-payflow-checkout", async (req, res) => {
 
     const targetObj = data.payment_link || data.paymentLink || data;
 
-    let checkoutUrl =
-      targetObj.checkout_url ||
-      targetObj.url ||
-      targetObj.hosted_checkout_url ||
-      targetObj.checkoutUrl ||
-      targetObj.short_url ||
-      targetObj.payment_url;
-
-    const linkId =
-      targetObj.link_id ||
-      targetObj.linkId ||
-      targetObj.payment_link_id ||
-      targetObj.paymentLinkId ||
-      targetObj.id;
+    // Direct resolution of payment link ID and checkout URL from PayFlow response
+    const linkId = targetObj.id || targetObj.link_id || targetObj.linkId || targetObj.payment_link_id;
+    let checkoutUrl = targetObj.checkout_url || targetObj.url || targetObj.hosted_checkout_url || targetObj.short_url || targetObj.payment_url;
 
     if (!checkoutUrl && linkId) {
       checkoutUrl = `${baseUrl}/checkout/${encodeURIComponent(String(linkId))}`;
     }
 
-    if (!checkoutUrl) {
-      console.error(
-        "PayFlow returned HTTP 200 without checkout URL or link ID:",
-        rawData
-      );
+    if (!checkoutUrl && !linkId) {
+      console.error("PayFlow returned HTTP 200 without checkout URL or link ID:", rawData);
       return res.status(502).json({
-        error:
-          "PayFlow created a response but did not provide a checkout URL or payment-link ID.",
+        error: "PayFlow created a response but did not provide a checkout URL or payment-link ID.",
         provider_status: response.status,
       });
     }
 
-    // Save session ID if available
     if (linkId) {
       try {
         await updateBookingDocument(bookingRef, { payment_session_id: String(linkId) });
@@ -407,18 +349,9 @@ app.post("/api/create-payflow-checkout", async (req, res) => {
       currency: data.currency ?? currency,
     });
   } catch (error) {
-    console.error(
-      "PayFlow checkout error:",
-      error.response?.status || error.statusCode || 500,
-      error.response?.data || error.message
-    );
-
+    console.error("PayFlow checkout error:", error.response?.status || error.statusCode || 500, error.response?.data || error.message);
     return res.status(error.statusCode || error.response?.status || 500).json({
-      error:
-        error.response?.data?.error ||
-        error.response?.data?.message ||
-        error.message ||
-        "Unable to create PayFlow checkout.",
+      error: error.response?.data?.error || error.response?.data?.message || error.message || "Unable to create PayFlow checkout.",
     });
   }
 });
@@ -436,9 +369,7 @@ app.post("/api/bookings/find", async (req, res) => {
 
     const booking = await getBookingDocument(bookingRef);
 
-    if (
-      String(booking?.customer_email || "").trim().toLowerCase() !== email
-    ) {
+    if (String(booking?.customer_email || "").trim().toLowerCase() !== email) {
       return res.status(404).json({
         error: "No booking found with this reference and email.",
       });
@@ -451,7 +382,6 @@ app.post("/api/bookings/find", async (req, res) => {
         error: "No booking found with this reference and email.",
       });
     }
-
     console.error("Booking lookup error:", error.message);
     return res.status(error.statusCode || 500).json({
       error: error.message || "Unable to search for booking.",
@@ -472,9 +402,7 @@ app.patch("/api/bookings/:bookingRef/cancel", async (req, res) => {
 
     const booking = await getBookingDocument(bookingRef);
 
-    if (
-      String(booking?.customer_email || "").trim().toLowerCase() !== email
-    ) {
+    if (String(booking?.customer_email || "").trim().toLowerCase() !== email) {
       return res.status(404).json({ error: "Booking not found." });
     }
 
