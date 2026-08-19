@@ -28,7 +28,7 @@ interface CheckoutProps {
     customerName: string;
     customerEmail: string;
     customerPhone: string;
-  }) => void;
+  }) => Promise<void> | void;
 }
 
 const EXTRA_PRICES: Record<keyof BookingExtras, number> = {
@@ -51,6 +51,7 @@ export function Checkout({
     extraStops: false,
     flightTracking: false,
   });
+
   const [flightNumber, setFlightNumber] = useState("");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -74,19 +75,46 @@ export function Checkout({
     setExtras((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
-  const handlePay = () => {
+  const validateForm = () => {
+    if (!name.trim()) {
+      setError("Please enter your full name.");
+      return false;
+    }
+    if (!email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setError("Please enter a valid email address.");
+      return false;
+    }
+    if (!phone.trim() || phone.length < 7) {
+      setError("Please enter a valid contact phone number.");
+      return false;
+    }
+    return true;
+  };
+
+  const handlePay = async () => {
     setError("");
+
+    if (!validateForm()) return;
+
     if (!onPayFlowCheckout) {
-      setError("Secure checkout is unavailable. Please try again.");
+      setError("Secure checkout is currently unavailable. Please refresh or try again.");
       return;
     }
-    onPayFlowCheckout({
-      extras,
-      flightNumber,
-      customerName: name,
-      customerEmail: email,
-      customerPhone: phone,
-    });
+
+    try {
+      setLoading(true);
+      await onPayFlowCheckout({
+        extras,
+        flightNumber: flightNumber.trim(),
+        customerName: name.trim(),
+        customerEmail: email.trim(),
+        customerPhone: phone.trim(),
+      });
+    } catch (err: any) {
+      setError(err?.message || "An unexpected error occurred during checkout.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const serviceIcon =
@@ -124,11 +152,16 @@ export function Checkout({
                 <InfoRow label="Date">{searchParams.pickupDate}</InfoRow>
                 {searchParams.serviceType === "transfer" ? (
                   <>
-                    <InfoRow label="Pickup / Arrival Airport">{searchParams.pickupLocation}</InfoRow>
-                    <InfoRow label="Destination">{searchParams.dropoffLocation}</InfoRow>
+                    <InfoRow label="Pickup / Arrival Airport">
+                      {searchParams.pickupLocation}
+                    </InfoRow>
+                    <InfoRow label="Destination">
+                      {searchParams.dropoffLocation}
+                    </InfoRow>
                     {searchParams.arrivalAirportCode && (
                       <InfoRow label="Destination Airport">
-                        {getAirportByCode(searchParams.arrivalAirportCode)?.name || searchParams.arrivalAirportCode}
+                        {getAirportByCode(searchParams.arrivalAirportCode)?.name ||
+                          searchParams.arrivalAirportCode}
                       </InfoRow>
                     )}
                     <InfoRow label="Pick-up Time">
@@ -169,48 +202,48 @@ export function Checkout({
                 <Sparkles className="w-4 h-4 text-sky-500" /> Add Extras
               </h3>
               <div className="space-y-3">
-                {(
-                  Object.keys(EXTRA_PRICES) as (keyof BookingExtras)[]
-                ).map((key) => {
-                  const labels: Record<keyof BookingExtras, string> = {
-                    meetGreet: "Meet & Greet Service",
-                    childSeat: "Child Seat",
-                    extraStops: "Extra Stops",
-                    flightTracking: "Flight Tracking",
-                  };
-                  return (
-                    <label
-                      key={key}
-                      className="flex items-center justify-between p-3 rounded-xl border border-slate-200 hover:border-sky-300 cursor-pointer transition-colors"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div
-                          className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all ${
-                            extras[key]
-                              ? "bg-sky-500 border-sky-500"
-                              : "border-slate-300"
-                          }`}
-                        >
-                          {extras[key] && (
-                            <Check className="w-3 h-3 text-white" />
-                          )}
+                {(Object.keys(EXTRA_PRICES) as (keyof BookingExtras)[]).map(
+                  (key) => {
+                    const labels: Record<keyof BookingExtras, string> = {
+                      meetGreet: "Meet & Greet Service",
+                      childSeat: "Child Seat",
+                      extraStops: "Extra Stops",
+                      flightTracking: "Flight Tracking",
+                    };
+                    return (
+                      <label
+                        key={key}
+                        className="flex items-center justify-between p-3 rounded-xl border border-slate-200 hover:border-sky-300 cursor-pointer transition-colors"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div
+                            className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all ${
+                              extras[key]
+                                ? "bg-sky-500 border-sky-500"
+                                : "border-slate-300"
+                            }`}
+                          >
+                            {extras[key] && (
+                              <Check className="w-3 h-3 text-white" />
+                            )}
+                          </div>
+                          <span className="text-sm text-slate-700">
+                            {labels[key]}
+                          </span>
                         </div>
-                        <span className="text-sm text-slate-700">
-                          {labels[key]}
+                        <span className="text-sm font-medium text-slate-600">
+                          +{formatPrice(EXTRA_PRICES[key] * PRICE_MARGIN, currency)}
                         </span>
-                      </div>
-                      <span className="text-sm font-medium text-slate-600">
-                        +{formatPrice(EXTRA_PRICES[key] * PRICE_MARGIN, currency)}
-                      </span>
-                      <input
-                        type="checkbox"
-                        checked={extras[key]}
-                        onChange={() => toggleExtra(key)}
-                        className="sr-only"
-                      />
-                    </label>
-                  );
-                })}
+                        <input
+                          type="checkbox"
+                          checked={extras[key]}
+                          onChange={() => toggleExtra(key)}
+                          className="sr-only"
+                        />
+                      </label>
+                    );
+                  }
+                )}
               </div>
             </div>
 
@@ -224,6 +257,7 @@ export function Checkout({
                   value={name}
                   onChange={setName}
                   placeholder="John Doe"
+                  required
                 />
                 <InputField
                   label="Email"
@@ -231,12 +265,15 @@ export function Checkout({
                   onChange={setEmail}
                   placeholder="john@example.com"
                   type="email"
+                  required
                 />
                 <InputField
                   label="Phone"
                   value={phone}
                   onChange={setPhone}
                   placeholder="9876543210"
+                  type="tel"
+                  required
                 />
                 <InputField
                   label="Flight Number (optional)"
@@ -332,8 +369,7 @@ export function Checkout({
               </button>
 
               <div className="mt-4 flex items-center justify-center gap-2 text-xs text-slate-400">
-                <ShieldCheck className="w-4 h-4 text-green-500" /> Secured by
-                PayFlow · Free cancellation up to 24h
+                <ShieldCheck className="w-4 h-4 text-green-500" /> Secured by PayFlow · Free cancellation up to 24h
               </div>
             </div>
           </div>
@@ -366,17 +402,19 @@ function InputField({
   onChange,
   placeholder,
   type = "text",
+  required = false,
 }: {
   label: string;
   value: string;
   onChange: (v: string) => void;
   placeholder: string;
   type?: string;
+  required?: boolean;
 }) {
   return (
     <div>
       <label className="text-xs font-medium text-slate-400 uppercase tracking-wider">
-        {label}
+        {label} {required && <span className="text-red-500">*</span>}
       </label>
       <input
         type={type}
