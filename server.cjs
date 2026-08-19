@@ -270,15 +270,17 @@ app.post("/api/create-payflow-checkout", async (req, res) => {
 
     const returnUrl = `${defaultReturnUrl.replace(/\/+$/, "")}/?payment_status=success&booking_ref=${encodeURIComponent(bookingRef)}`;
 
-    // Revised payload to comply with PayFlow API requirements
+    // Standardized Payload structure for PayFlow API
     const payload = {
       title: String(body.title || `ZippyGo Booking ${bookingRef}`).slice(0, 100),
       description: String(body.description || `ZippyGo Airport Transfer Booking - Ref: ${bookingRef}`).slice(0, 500),
-      amount: Math.round(amount * 100), // Converted to base unit/cents (e.g., 3069 -> 306900)
+      amount: amount, // Standard monetary value
       currency: currency.toLowerCase(),
       customer_email: customerEmail,
       customer_name: customerName,
+      customer_phone: customerPhone || undefined,
       return_url: returnUrl,
+      redirect_url: returnUrl,
       max_uses: 1,
     };
 
@@ -313,20 +315,21 @@ app.post("/api/create-payflow-checkout", async (req, res) => {
       });
     }
 
-    const targetObj = data.payment_link || data.paymentLink || data;
+    const targetObj = data.payment_link || data.paymentLink || data.link || data;
 
-    // Direct resolution of payment link ID and checkout URL from PayFlow response
-    const linkId = targetObj.id || targetObj.link_id || targetObj.linkId || targetObj.payment_link_id;
-    let checkoutUrl = targetObj.checkout_url || targetObj.url || targetObj.hosted_checkout_url || targetObj.short_url || targetObj.payment_url;
+    // Deep search across all standard link ID and checkout URL variations
+    const linkId = targetObj.id || targetObj.link_id || targetObj.linkId || targetObj.payment_link_id || rawData.id || rawData.link_id;
+    let checkoutUrl = targetObj.checkout_url || targetObj.url || targetObj.hosted_checkout_url || targetObj.short_url || targetObj.payment_url || rawData.short_url || rawData.checkout_url;
 
+    // Fallback: Build standard checkout route if link ID exists
     if (!checkoutUrl && linkId) {
-      checkoutUrl = `${baseUrl}/checkout/${encodeURIComponent(String(linkId))}`;
+      checkoutUrl = `${baseUrl}/pay/${encodeURIComponent(String(linkId))}`;
     }
 
     if (!checkoutUrl && !linkId) {
       console.error("PayFlow returned HTTP 200 without checkout URL or link ID:", rawData);
       return res.status(502).json({
-        error: "PayFlow created a response but did not provide a checkout URL or payment-link ID.",
+        error: `PayFlow succeeded but did not return a valid URL or link ID. Raw response: ${JSON.stringify(rawData)}`,
         provider_status: response.status,
       });
     }
