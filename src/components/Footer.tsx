@@ -1,4 +1,16 @@
-import { Zap, Plane, Car, ParkingCircle, Globe, Facebook, Twitter, Instagram, Linkedin, MessageCircle } from "lucide-react";
+import {
+  Zap,
+  Plane,
+  Car,
+  ParkingCircle,
+  Globe,
+  Facebook,
+  Twitter,
+  Instagram,
+  Linkedin,
+  MessageCircle,
+  Phone,
+} from "lucide-react";
 
 interface FooterProps {
   onNavigate: (section: string) => void;
@@ -44,7 +56,8 @@ export function Footer({ onNavigate }: FooterProps) {
               </div>
             </div>
             <p className="text-sm leading-relaxed max-w-sm">
-              Your trusted partner for airport transfers, car hire, and parking in 180+ countries. Book in minutes, travel with confidence.
+              Your trusted partner for airport transfers, car hire, and parking
+              in 180+ countries. Book in minutes, travel with confidence.
             </p>
             <div className="mt-5 space-y-2 text-sm">
               <div className="flex items-center gap-2">
@@ -52,6 +65,15 @@ export function Footer({ onNavigate }: FooterProps) {
               </div>
               <div className="flex items-center gap-2">
                 <MessageCircle className="w-4 h-4" /> Live chat support 24/7
+              </div>
+              <div className="flex items-center gap-2">
+                <a
+                  href="tel:+919177902449"
+                  className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors"
+                >
+                  <Phone className="w-4 h-4 text-sky-400" />
+                  +91 9177902449
+                </a>
               </div>
             </div>
             <div className="flex gap-3 mt-5">
@@ -66,7 +88,6 @@ export function Footer({ onNavigate }: FooterProps) {
               ))}
             </div>
           </div>
-
           {Object.entries(links).map(([category, items]) => (
             <div key={category}>
               <h4 className="text-sm font-semibold text-white uppercase tracking-wider mb-4">
@@ -87,10 +108,10 @@ export function Footer({ onNavigate }: FooterProps) {
             </div>
           ))}
         </div>
-
         <div className="mt-12 pt-8 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4">
           <p className="text-xs text-slate-500">
-            © 2026 ZippyGo. All rights reserved. ZippyGo is owned and operated by <strong>Zippygo Transfers</strong>.
+            © 2026 ZippyGo. All rights reserved. ZippyGo is owned and operated
+            by <strong>Zippygo Transfers</strong>.
           </p>
           <div className="flex items-center gap-4 text-xs text-slate-500">
             <button
