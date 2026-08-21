@@ -1,6 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 const axios = require("axios");
+const Razorpay = require("razorpay");
 
 const app = express();
 
@@ -136,20 +137,20 @@ app.get("/", (_req, res) => {
   res.json({
     ok: true,
     service: "ZippyGo payment backend",
-    gateway: "PayFlow",
+    gateway: "Razorpay",
   });
 });
 
 app.get("/health", (_req, res) => {
-  const payflowConfigured = Boolean(env("PAYFLOW_API_URL") && env("PAYFLOW_API_KEY"));
+  const razorpayConfigured = Boolean(env("RAZORPAY_KEY_ID") && env("RAZORPAY_KEY_SECRET"));
   const aw = appwriteConfig();
   const appwriteConfigured = Boolean(
     aw.projectId && aw.apiKey && aw.databaseId && aw.collectionId
   );
   res.json({
     ok: true,
-    gateway: "PayFlow",
-    payflow_configured: payflowConfigured,
+    gateway: "Razorpay",
+    razorpay_configured: razorpayConfigured,
     appwrite_configured: appwriteConfigured,
   });
 });
@@ -186,28 +187,23 @@ app.get("/api/appwrite/status", async (_req, res) => {
   }
 });
 
-app.post("/api/create-payflow-checkout", async (req, res) => {
+// Razorpay Order Creation Route
+app.post("/api/create-razorpay-order", async (req, res) => {
   let bookingRef = "";
   try {
-    let rawApiUrl = env("PAYFLOW_API_URL").replace(/\/+$/, "");
-    const apiKey = env("PAYFLOW_API_KEY");
-    const defaultReturnUrl = env(
-      "ZIPPYGO_RETURN_URL",
-      "https://zippygotransfers.onrender.com/"
-    );
+    const razorpayKeyId = env("RAZORPAY_KEY_ID");
+    const razorpayKeySecret = env("RAZORPAY_KEY_SECRET");
 
-    if (!rawApiUrl || !apiKey) {
+    if (!razorpayKeyId || !razorpayKeySecret) {
       return res.status(500).json({
-        error: "PayFlow is not configured. Set PAYFLOW_API_URL and PAYFLOW_API_KEY on the backend.",
+        error: "Razorpay is not configured. Set RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET on environment variables.",
       });
     }
 
-    const baseUrl = rawApiUrl.replace(/\/(api\/v1|api)$/i, "");
-    
-    // Test base payment link endpoint
-    const targetEndpoint = rawApiUrl.includes("/api/") 
-      ? `${rawApiUrl}/payment-links` 
-      : `${baseUrl}/api/v1/payment-links`;
+    const razorpay = new Razorpay({
+      key_id: razorpayKeyId,
+      key_secret: razorpayKeySecret,
+    });
 
     const body = req.body || {};
     const amount = Math.round(Number(body.amount) * 100) / 100;
@@ -269,89 +265,42 @@ app.post("/api/create-payflow-checkout", async (req, res) => {
       });
     }
 
-    const returnUrl = `${defaultReturnUrl.replace(/\/+$/, "")}/?payment_status=success&booking_ref=${encodeURIComponent(bookingRef)}`;
-
-    const payload = {
-      title: String(body.title || `ZippyGo Booking ${bookingRef}`).slice(0, 100),
-      description: String(body.description || `ZippyGo Airport Transfer Booking - Ref: ${bookingRef}`).slice(0, 500),
-      amount: amount,
-      currency: currency.toLowerCase(),
-      customer_email: customerEmail,
-      customer_name: customerName,
-      customer_phone: customerPhone || undefined,
-      return_url: returnUrl,
-      redirect_url: returnUrl,
-      booking_ref: bookingRef,
-      max_uses: 1,
+    const orderOptions = {
+      amount: Math.round(amount * 100), // Convert to base currency unit (e.g. cents or paise)
+      currency: currency,
+      receipt: bookingRef,
+      notes: {
+        bookingRef,
+        customerName,
+        customerEmail,
+      },
     };
 
-    console.log("Posting to PayFlow Endpoint:", targetEndpoint);
+    const order = await razorpay.orders.create(orderOptions);
 
-    const response = await axios.post(targetEndpoint, payload, {
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "X-API-Key": apiKey,
-        "Content-Type": "application/json",
-        Accept: "application/json",
-      },
-      timeout: 20000,
-      validateStatus: () => true,
-    });
-
-    console.log("PayFlow Response Status:", response.status);
-    console.log("PayFlow Raw Response Body:", JSON.stringify(response.data));
-
-    const rawData = response.data || {};
-    const data = rawData?.data && typeof rawData.data === "object" ? { ...rawData, ...rawData.data } : rawData;
-
-    if (response.status < 200 || response.status >= 300) {
-      try {
-        await updateBookingDocument(bookingRef, { payment_status: "failed" });
-      } catch (updateError) {
-        console.error("Unable to mark failed PayFlow booking:", updateError.message);
-      }
-      const providerMessage = data?.error?.message || data?.error || data?.message || `PayFlow returned HTTP ${response.status}.`;
-      return res.status(502).json({
-        error: String(providerMessage),
-        provider_status: response.status,
-      });
+    if (!order || !order.id) {
+      throw new Error("Razorpay failed to create an order ID.");
     }
 
-    const targetObj = data.payment_link || data.paymentLink || data.link || data;
-
-    // Direct extraction of link ID and URL
-    let linkId = targetObj.id || targetObj.link_id || targetObj.linkId || targetObj.payment_link_id || rawData.id || rawData.link_id;
-    let checkoutUrl = targetObj.checkout_url || targetObj.url || targetObj.hosted_checkout_url || targetObj.short_url || targetObj.payment_url || rawData.short_url || rawData.checkout_url;
-
-    // Smart Fallback when PayFlow returns HTTP 200 with empty body {}
-    if (!checkoutUrl && !linkId) {
-      linkId = `PL-${bookingRef}`;
-      checkoutUrl = `${baseUrl}/pay/${encodeURIComponent(bookingRef)}`;
-    } else if (!checkoutUrl && linkId) {
-      checkoutUrl = `${baseUrl}/pay/${encodeURIComponent(String(linkId))}`;
-    }
-
-    if (linkId) {
-      try {
-        await updateBookingDocument(bookingRef, { payment_session_id: String(linkId) });
-      } catch (err) {
-        console.warn("Could not save payment_session_id to Appwrite:", err.message);
-      }
+    try {
+      await updateBookingDocument(bookingRef, { payment_session_id: String(order.id) });
+    } catch (err) {
+      console.warn("Could not save payment_session_id to Appwrite:", err.message);
     }
 
     return res.json({
       success: true,
-      gateway: "payflow",
+      gateway: "razorpay",
       bookingRef,
-      checkout_url: checkoutUrl,
-      link_id: linkId,
-      amount: data.amount ?? amount,
-      currency: data.currency ?? currency,
+      order_id: order.id,
+      amount: order.amount,
+      currency: order.currency,
+      key_id: razorpayKeyId,
     });
   } catch (error) {
-    console.error("PayFlow checkout error:", error.response?.status || error.statusCode || 500, error.response?.data || error.message);
-    return res.status(error.statusCode || error.response?.status || 500).json({
-      error: error.response?.data?.error || error.response?.data?.message || error.message || "Unable to create PayFlow checkout.",
+    console.error("Razorpay order error:", error);
+    return res.status(500).json({
+      error: error.message || "Unable to create Razorpay checkout order.",
     });
   }
 });
@@ -425,5 +374,5 @@ app.patch("/api/bookings/:bookingRef/cancel", async (req, res) => {
 
 const PORT = Number(process.env.PORT) || 10000;
 app.listen(PORT, "0.0.0.0", () => {
-  console.log(`ZippyGo PayFlow backend listening on port ${PORT}`);
+  console.log(`ZippyGo Razorpay backend listening on port ${PORT}`);
 });
