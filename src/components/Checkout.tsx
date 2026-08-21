@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   ArrowLeft,
   Check,
@@ -16,6 +16,8 @@ import type { Vehicle, SearchParams, BookingExtras } from "../lib/types";
 import { formatPrice } from "../lib/currencies";
 import { getAirportByCode } from "../lib/data";
 import { calculateVehiclePriceUSD, PRICE_MARGIN } from "../lib/pricing";
+
+declare const Razorpay: any;
 
 interface CheckoutProps {
   vehicle: Vehicle;
@@ -43,7 +45,6 @@ export function Checkout({
   searchParams,
   currency,
   onBack,
-  onPayFlowCheckout,
 }: CheckoutProps) {
   const [extras, setExtras] = useState<BookingExtras>({
     meetGreet: false,
@@ -71,6 +72,18 @@ export function Checkout({
 
   const totalUSD = basePrice + extrasTotal;
 
+  // Load Razorpay Checkout SDK Script
+  useEffect(() => {
+    const script = document.createElement("script");
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.async = true;
+    document.body.appendChild(script);
+
+    return () => {
+      document.body.removeChild(script);
+    };
+  }, []);
+
   const toggleExtra = (key: keyof BookingExtras) => {
     setExtras((prev) => ({ ...prev, [key]: !prev[key] }));
   };
@@ -96,23 +109,83 @@ export function Checkout({
 
     if (!validateForm()) return;
 
-    if (!onPayFlowCheckout) {
-      setError("Secure checkout is currently unavailable. Please refresh or try again.");
+    if (typeof Razorpay === "undefined") {
+      setError("Payment SDK is loading. Please try again in a moment.");
       return;
     }
 
     try {
       setLoading(true);
-      await onPayFlowCheckout({
-        extras,
-        flightNumber: flightNumber.trim(),
-        customerName: name.trim(),
-        customerEmail: email.trim(),
-        customerPhone: phone.trim(),
+
+      const bookingRef = `ZGO-${Date.now().toString(36).toUpperCase()}`;
+
+      // Request Razorpay Order from backend
+      const response = await fetch("/api/create-razorpay-order", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          amount: totalUSD,
+          currency: currency || "USD",
+          bookingRef,
+          customer: {
+            name: name.trim(),
+            email: email.trim(),
+            phone: phone.trim(),
+          },
+          booking: {
+            service_type: searchParams.serviceType,
+            pickup_location: searchParams.pickupLocation,
+            dropoff_location: searchParams.dropoffLocation,
+            pickup_date: searchParams.pickupDate,
+            pickup_time: searchParams.pickupTime,
+            return_date: searchParams.returnDate,
+            vehicle_id: vehicle.id,
+            vehicle_name: vehicle.name,
+            passengers: searchParams.passengers,
+            flight_number: flightNumber.trim(),
+            extras,
+          },
+        }),
       });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || "Failed to create payment session.");
+      }
+
+      // Configure Razorpay inline modal options
+      const options = {
+        key: data.key_id,
+        amount: data.amount,
+        currency: data.currency,
+        name: "ZippyGo Transfers",
+        description: `Booking ${data.bookingRef}`,
+        order_id: data.order_id,
+        prefill: {
+          name: name.trim(),
+          email: email.trim(),
+          contact: phone.trim(),
+        },
+        handler: function (response: any) {
+          window.location.href = `/?payment_status=success&booking_ref=${encodeURIComponent(
+            data.bookingRef
+          )}&payment_id=${encodeURIComponent(response.razorpay_payment_id)}`;
+        },
+        theme: {
+          color: "#0284c7",
+        },
+        modal: {
+          ondismiss: function () {
+            setLoading(false);
+          },
+        },
+      };
+
+      const razorpayInstance = new Razorpay(options);
+      razorpayInstance.open();
     } catch (err: any) {
       setError(err?.message || "An unexpected error occurred during checkout.");
-    } finally {
       setLoading(false);
     }
   };
@@ -369,7 +442,7 @@ export function Checkout({
               </button>
 
               <div className="mt-4 flex items-center justify-center gap-2 text-xs text-slate-400">
-                <ShieldCheck className="w-4 h-4 text-green-500" /> Secured by PayFlow · Free cancellation up to 24h
+                <ShieldCheck className="w-4 h-4 text-green-500" /> Secured by Razorpay · Free cancellation up to 24h
               </div>
             </div>
           </div>
