@@ -1,4 +1,4 @@
-import type { Vehicle } from "./types";
+import type { Vehicle, Airport, Hotel } from "./types";
 
 export const VEHICLES: Vehicle[] = [
   {
@@ -77,48 +77,42 @@ export const POPULAR_DESTINATIONS: PopularDestination[] = [
     city: "London",
     airport: "Heathrow Airport",
     code: "LHR",
-    image:
-      "https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?auto=format&fit=crop&q=80&w=800",
+    image: "https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?auto=format&fit=crop&q=80&w=800",
   },
   {
     id: "dubai",
     city: "Dubai",
     airport: "Dubai International Airport",
     code: "DXB",
-    image:
-      "https://images.unsplash.com/photo-1512453979798-5ea266f8880c?auto=format&fit=crop&q=80&w=800",
+    image: "https://images.unsplash.com/photo-1512453979798-5ea266f8880c?auto=format&fit=crop&q=80&w=800",
   },
   {
     id: "new-york",
     city: "New York",
     airport: "John F. Kennedy International",
     code: "JFK",
-    image:
-      "https://images.unsplash.com/photo-1496442226666-8d4d0e62e6e9?auto=format&fit=crop&q=80&w=800",
+    image: "https://images.unsplash.com/photo-1496442226666-8d4d0e62e6e9?auto=format&fit=crop&q=80&w=800",
   },
   {
     id: "paris",
     city: "Paris",
     airport: "Charles de Gaulle Airport",
     code: "CDG",
-    image:
-      "https://images.unsplash.com/photo-1502602898657-3e91760cbb34?auto=format&fit=crop&q=80&w=800",
+    image: "https://images.unsplash.com/photo-1502602898657-3e91760cbb34?auto=format&fit=crop&q=80&w=800",
   },
   {
     id: "tokyo",
     city: "Tokyo",
     airport: "Narita International Airport",
     code: "NRT",
-    image:
-      "https://images.unsplash.com/photo-1503899036084-c55cdd92da26?auto=format&fit=crop&q=80&w=800",
+    image: "https://images.unsplash.com/photo-1503899036084-c55cdd92da26?auto=format&fit=crop&q=80&w=800",
   },
   {
     id: "singapore",
     city: "Singapore",
     airport: "Changi Airport",
     code: "SIN",
-    image:
-      "https://images.unsplash.com/photo-1525625293386-3f8f99389edd?auto=format&fit=crop&q=80&w=800",
+    image: "https://images.unsplash.com/photo-1525625293386-3f8f99389edd?auto=format&fit=crop&q=80&w=800",
   },
 ];
 
@@ -153,3 +147,73 @@ export const SERVICES: ServiceOption[] = [
     iconName: "ParkingCircle",
   },
 ];
+
+export const AIRPORT_DATALIST: Airport[] = [
+  {
+    code: "LHR",
+    name: "London Heathrow Airport",
+    city: "London",
+    country: "United Kingdom",
+    hotels: [
+      { id: "h1", name: "The Ritz London", address: "150 Piccadilly, London W1J 9BR" },
+      { id: "h2", name: "The Savoy", address: "Strand, London WC2R 0EZ" },
+      { id: "h3", name: "Hilton London Heathrow Airport", address: "Terminal 4, Heathrow" },
+    ],
+  },
+  {
+    code: "DXB",
+    name: "Dubai International Airport",
+    city: "Dubai",
+    country: "United Arab Emirates",
+    hotels: [
+      { id: "h4", name: "Burj Al Arab", address: "Jumeirah St, Dubai" },
+      { id: "h5", name: "Atlantis The Palm", address: "Crescent Rd, Dubai" },
+      { id: "h6", name: "JW Marriott Marquis Hotel", address: "Business Bay, Dubai" },
+    ],
+  },
+  {
+    code: "JFK",
+    name: "John F. Kennedy International Airport",
+    city: "New York",
+    country: "United States",
+    hotels: [
+      { id: "h7", name: "The Plaza Hotel", address: "768 5th Ave, New York" },
+      { id: "h8", name: "TWA Hotel", address: "JFK Airport, Queens, NY" },
+    ],
+  },
+  {
+    code: "CDG",
+    name: "Charles de Gaulle Airport",
+    city: "Paris",
+    country: "France",
+    hotels: [
+      { id: "h9", name: "Ritz Paris", address: "15 Place Vendôme, Paris" },
+      { id: "h10", name: "Pullman Paris Roissy CDG", address: "Roissypole, CDG Airport" },
+    ],
+  },
+];
+
+export function getAirportFromLocation(locationStr: string): Airport | undefined {
+  if (!locationStr) return undefined;
+  const match = locationStr.match(/\(([A-Z]{3})\)/);
+  const code = match ? match[1] : locationStr.trim().toUpperCase();
+  return AIRPORT_DATALIST.find(
+    (a) => a.code === code || a.name.toLowerCase().includes(locationStr.toLowerCase())
+  );
+}
+
+export function getAirportByCode(code: string): Airport | undefined {
+  if (!code) return undefined;
+  return AIRPORT_DATALIST.find((a) => a.code.toUpperCase() === code.toUpperCase());
+}
+
+export function getHotelsForAirport(airportCode: string): Hotel[] {
+  if (!airportCode) return [];
+  const airport = getAirportByCode(airportCode);
+  return airport?.hotels || [];
+}
+
+export function getAirportsForCity(city: string): Airport[] {
+  if (!city) return [];
+  return AIRPORT_DATALIST.filter((a) => a.city.toLowerCase() === city.toLowerCase());
+}
