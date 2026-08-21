@@ -9,6 +9,7 @@ import {
   Users,
   Search,
   Hotel,
+  Building,
 } from "lucide-react";
 import type { ServiceType, SearchParams } from "../lib/types";
 import {
@@ -39,17 +40,20 @@ export function SearchWidget({
   const [roundTrip, setRoundTrip] = useState(false);
   const [passengers, setPassengers] = useState(1);
 
+  // Triggered dynamically whenever pickupLocation changes
   const selectedPickupAirport = useMemo(
     () => getAirportFromLocation(pickupLocation),
     [pickupLocation]
   );
 
+  // Trigger hotels for the selected airport code
   const availableHotels = useMemo(() => {
     return selectedPickupAirport
       ? getHotelsForAirport(selectedPickupAirport.code)
       : [];
   }, [selectedPickupAirport]);
 
+  // Trigger popular areas for the selected airport code
   const availableAreas = useMemo(() => {
     return selectedPickupAirport
       ? getAreasForAirport(selectedPickupAirport.code)
@@ -126,9 +130,10 @@ export function SearchWidget({
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Worldwide Airport Code Input */}
         <div>
           <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-            Pickup Airport
+            Pickup Airport Code / City
           </label>
           <div className="relative">
             <MapPin className="w-4 h-4 absolute left-3 top-3.5 text-slate-400" />
@@ -137,12 +142,12 @@ export function SearchWidget({
               list="airports-list"
               value={pickupLocation}
               onChange={(e) => setPickupLocation(e.target.value)}
-              placeholder="Search airport or city (e.g., LHR)"
-              className="w-full pl-9 pr-3 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-sky-500 focus:bg-white transition-all"
+              placeholder="e.g. LHR, DXB, JFK, CDG"
+              className="w-full pl-9 pr-3 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-sky-500 focus:bg-white transition-all font-medium"
             />
             <datalist id="airports-list">
               {AIRPORT_DATALIST.map((ap) => (
-                <option key={ap.code} value={`${ap.code} - ${ap.name}`}>
+                <option key={ap.code} value={`(${ap.code}) ${ap.name}`}>
                   {ap.city}, {ap.country}
                 </option>
               ))}
@@ -150,20 +155,26 @@ export function SearchWidget({
           </div>
         </div>
 
+        {/* Dynamic Hotels and Areas triggered by Airport Code */}
         {serviceType === "transfer" && (
           <div>
             <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-              Drop-off / Hotel
+              Drop-off Area / Hotel
             </label>
             <div className="relative">
               <Hotel className="w-4 h-4 absolute left-3 top-3.5 text-slate-400" />
               <input
                 type="text"
                 list="dropoff-options"
+                disabled={!selectedPickupAirport}
                 value={dropoffLocation}
                 onChange={(e) => setDropoffLocation(e.target.value)}
-                placeholder="Hotel, area, or address"
-                className="w-full pl-9 pr-3 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-sky-500 focus:bg-white transition-all"
+                placeholder={
+                  selectedPickupAirport
+                    ? `Hotels or areas in ${selectedPickupAirport.city}`
+                    : "Select pickup airport first"
+                }
+                className="w-full pl-9 pr-3 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-sky-500 focus:bg-white transition-all font-medium disabled:opacity-50 disabled:cursor-not-allowed"
               />
               <datalist id="dropoff-options">
                 {availableHotels.map((h) => (
@@ -191,7 +202,7 @@ export function SearchWidget({
               type="date"
               value={pickupDate}
               onChange={(e) => setPickupDate(e.target.value)}
-              className="w-full pl-9 pr-3 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-sky-500 focus:bg-white transition-all"
+              className="w-full pl-9 pr-3 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-sky-500 focus:bg-white transition-all font-medium"
             />
           </div>
         </div>
@@ -206,7 +217,7 @@ export function SearchWidget({
               type="time"
               value={pickupTime}
               onChange={(e) => setPickupTime(e.target.value)}
-              className="w-full pl-9 pr-3 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-sky-500 focus:bg-white transition-all"
+              className="w-full pl-9 pr-3 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-sky-500 focus:bg-white transition-all font-medium"
             />
           </div>
         </div>
