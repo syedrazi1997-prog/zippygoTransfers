@@ -19,6 +19,9 @@ import { calculateVehiclePriceUSD, PRICE_MARGIN } from "../lib/pricing";
 
 declare const Razorpay: any;
 
+// Replace with your exact Render Web Service URL if different
+const BACKEND_URL = "https://zippygo-transfers-backend.onrender.com";
+
 interface CheckoutProps {
   vehicle: Vehicle;
   searchParams: SearchParams;
@@ -72,7 +75,7 @@ export function Checkout({
 
   const totalUSD = basePrice + extrasTotal;
 
-  // Load Razorpay Checkout SDK Script
+  // Load Razorpay SDK script dynamically
   useEffect(() => {
     const script = document.createElement("script");
     script.src = "https://checkout.razorpay.com/v1/checkout.js";
@@ -119,8 +122,8 @@ export function Checkout({
 
       const bookingRef = `ZGO-${Date.now().toString(36).toUpperCase()}`;
 
-      // Request Razorpay Order from backend
-      const response = await fetch("/api/create-razorpay-order", {
+      // Request order creation from explicit Render Backend URL
+      const response = await fetch(`${BACKEND_URL}/api/create-razorpay-order`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -162,7 +165,7 @@ export function Checkout({
         throw new Error(data.error || `Failed to create payment session (HTTP ${response.status}).`);
       }
 
-      // Configure Razorpay inline modal options
+      // Configure Razorpay modal options
       const options = {
         key: data.key_id,
         amount: data.amount,
