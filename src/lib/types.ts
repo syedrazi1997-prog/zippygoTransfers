@@ -1,6 +1,12 @@
 export type ServiceType = "transfer" | "car_hire" | "parking";
 
-export type VehicleClass = "economy" | "executive" | "luxury" | "suv" | "van" | "minibus";
+export type VehicleClass =
+  | "economy"
+  | "executive"
+  | "luxury"
+  | "suv"
+  | "van"
+  | "minibus";
 
 export interface Vehicle {
   id: string;
@@ -55,8 +61,15 @@ export interface SearchParams {
 export interface Hotel {
   id: string;
   name: string;
-  area: string;
-  city: string;
+  address: string;
+  area?: string;
+  city?: string;
+}
+
+export interface Area {
+  id: string;
+  name: string;
+  type: "district" | "suburb" | "landmark" | "city_center";
 }
 
 export interface Airport {
@@ -64,6 +77,8 @@ export interface Airport {
   name: string;
   city: string;
   country: string;
+  hotels?: Hotel[];
+  areas?: Area[];
 }
 
 export interface BookingExtras {
