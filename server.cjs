@@ -196,7 +196,8 @@ app.post("/api/create-razorpay-order", async (req, res) => {
 
     if (!razorpayKeyId || !razorpayKeySecret) {
       return res.status(500).json({
-        error: "Razorpay is not configured. Set RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET on environment variables.",
+        success: false,
+        error: "Razorpay is not configured. Set RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET environment variables.",
       });
     }
 
@@ -214,10 +215,10 @@ app.post("/api/create-razorpay-order", async (req, res) => {
     const booking = body.booking || {};
 
     if (!Number.isFinite(amount) || amount <= 0) {
-      return res.status(400).json({ error: "Invalid payment amount." });
+      return res.status(400).json({ success: false, error: "Invalid payment amount." });
     }
     if (!bookingRef || !/^[A-Z0-9-]{6,40}$/.test(bookingRef)) {
-      return res.status(400).json({ error: "Invalid booking reference." });
+      return res.status(400).json({ success: false, error: "Invalid booking reference." });
     }
 
     const customerName = String(customer.name || "").trim();
@@ -225,7 +226,7 @@ app.post("/api/create-razorpay-order", async (req, res) => {
     const customerPhone = String(customer.phone || "").replace(/\D/g, "").slice(-15);
 
     if (!customerName || !customerEmail) {
-      return res.status(400).json({ error: "Customer name and email are required." });
+      return res.status(400).json({ success: false, error: "Customer name and email are required." });
     }
 
     const bookingData = {
@@ -256,17 +257,19 @@ app.post("/api/create-razorpay-order", async (req, res) => {
     } catch (error) {
       if (error.statusCode === 409) {
         return res.status(409).json({
+          success: false,
           error: "This booking reference already exists. Please try again.",
         });
       }
       console.error("Appwrite booking creation error:", error.message);
       return res.status(error.statusCode || 502).json({
+        success: false,
         error: `Unable to save booking in Appwrite: ${error.message}`,
       });
     }
 
     const orderOptions = {
-      amount: Math.round(amount * 100), // Convert to base currency unit (e.g. cents or paise)
+      amount: Math.round(amount * 100), // Convert to base unit (e.g. cents/paise)
       currency: currency,
       receipt: bookingRef,
       notes: {
@@ -276,10 +279,22 @@ app.post("/api/create-razorpay-order", async (req, res) => {
       },
     };
 
-    const order = await razorpay.orders.create(orderOptions);
+    let order;
+    try {
+      order = await razorpay.orders.create(orderOptions);
+    } catch (rzpErr) {
+      console.error("Razorpay order creation failed:", rzpErr);
+      return res.status(400).json({
+        success: false,
+        error: rzpErr?.error?.description || rzpErr?.message || "Razorpay rejected order creation.",
+      });
+    }
 
     if (!order || !order.id) {
-      throw new Error("Razorpay failed to create an order ID.");
+      return res.status(500).json({
+        success: false,
+        error: "Razorpay order creation returned an invalid order ID.",
+      });
     }
 
     try {
@@ -300,6 +315,7 @@ app.post("/api/create-razorpay-order", async (req, res) => {
   } catch (error) {
     console.error("Razorpay order error:", error);
     return res.status(500).json({
+      success: false,
       error: error.message || "Unable to create Razorpay checkout order.",
     });
   }
