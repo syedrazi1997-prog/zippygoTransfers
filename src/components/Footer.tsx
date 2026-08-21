@@ -17,30 +17,46 @@ interface FooterProps {
 }
 
 export function Footer({ onNavigate }: FooterProps) {
-  const links = {
-    Services: [
-      { label: "Airport Transfers", icon: Plane, section: "transfers" },
-      { label: "Car Hire", icon: Car, section: "car_hire" },
-      { label: "Airport Parking", icon: ParkingCircle, section: "parking" },
-    ],
-    Company: [
-      { label: "About Us", section: "about" },
-      { label: "Careers", section: "careers" },
-      { label: "Press", section: "press" },
-      { label: "Blog", section: "blog" },
-    ],
-    Support: [
-      { label: "Help Center", section: "help" },
-      { label: "Manage My Booking", section: "manage_booking" },
-      { label: "Cancellation Policy", section: "cancellation" },
-      { label: "Terms of Service", section: "terms" },
-    ],
-  };
+  const serviceItems = [
+    {
+      label: "Airport Transfers",
+      icon: Plane,
+      section: "transfers",
+      description: "Direct door-to-door private airport pickups with flight tracking.",
+    },
+    {
+      label: "Car Hire",
+      icon: Car,
+      section: "car_hire",
+      description: "Self-drive rentals with flexible pickup and unlimited mileage.",
+    },
+    {
+      label: "Airport Parking",
+      icon: ParkingCircle,
+      section: "parking",
+      description: "Secure terminal & off-site reserved parking with 24/7 CCTV.",
+    },
+  ];
+
+  const companyLinks = [
+    { label: "About Us", section: "about" },
+    { label: "Careers", section: "careers" },
+    { label: "Press", section: "press" },
+    { label: "Blog", section: "blog" },
+  ];
+
+  const supportLinks = [
+    { label: "Help Center", section: "help" },
+    { label: "Manage My Booking", section: "manage_booking" },
+    { label: "Cancellation Policy", section: "cancellation" },
+    { label: "Terms of Service", section: "terms" },
+  ];
 
   return (
     <footer className="bg-slate-900 text-slate-400 mt-auto w-full">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14">
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
+          {/* Brand Info */}
           <div className="lg:col-span-2">
             <div className="flex items-center gap-2 mb-4">
               <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-sky-400 to-blue-600 flex items-center justify-center shadow-lg shadow-sky-500/30">
@@ -88,26 +104,73 @@ export function Footer({ onNavigate }: FooterProps) {
               ))}
             </div>
           </div>
-          {Object.entries(links).map(([category, items]) => (
-            <div key={category}>
-              <h4 className="text-sm font-semibold text-white uppercase tracking-wider mb-4">
-                {category}
-              </h4>
-              <ul className="space-y-2.5">
-                {items.map((item) => (
-                  <li key={item.label}>
+
+          {/* Services Section with Descriptions */}
+          <div>
+            <h4 className="text-sm font-semibold text-white uppercase tracking-wider mb-4">
+              Services
+            </h4>
+            <ul className="space-y-4">
+              {serviceItems.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <li key={item.label} className="group">
                     <button
                       onClick={() => onNavigate(item.section)}
-                      className="text-sm hover:text-white transition-colors text-left"
+                      className="text-sm text-slate-300 hover:text-sky-400 transition-colors text-left font-medium flex items-center gap-2"
                     >
+                      <Icon className="w-4 h-4 text-sky-400" />
                       {item.label}
                     </button>
+                    <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                      {item.description}
+                    </p>
                   </li>
-                ))}
-              </ul>
-            </div>
-          ))}
+                );
+              })}
+            </ul>
+          </div>
+
+          {/* Company Links */}
+          <div>
+            <h4 className="text-sm font-semibold text-white uppercase tracking-wider mb-4">
+              Company
+            </h4>
+            <ul className="space-y-2.5">
+              {companyLinks.map((item) => (
+                <li key={item.label}>
+                  <button
+                    onClick={() => onNavigate(item.section)}
+                    className="text-sm hover:text-white transition-colors text-left"
+                  >
+                    {item.label}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Support Links */}
+          <div>
+            <h4 className="text-sm font-semibold text-white uppercase tracking-wider mb-4">
+              Support
+            </h4>
+            <ul className="space-y-2.5">
+              {supportLinks.map((item) => (
+                <li key={item.label}>
+                  <button
+                    onClick={() => onNavigate(item.section)}
+                    className="text-sm hover:text-white transition-colors text-left"
+                  >
+                    {item.label}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
         </div>
+
+        {/* Bottom Bar */}
         <div className="mt-12 pt-8 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4">
           <p className="text-xs text-slate-500">
             © 2026 ZippyGo. All rights reserved. ZippyGo is owned and operated
