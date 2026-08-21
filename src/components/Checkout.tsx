@@ -148,10 +148,18 @@ export function Checkout({
         }),
       });
 
-      const data = await response.json();
+      // Safely parse JSON response
+      const rawText = await response.text();
+      let data: any = {};
+
+      try {
+        data = rawText ? JSON.parse(rawText) : {};
+      } catch {
+        throw new Error(`Server returned non-JSON response (HTTP ${response.status}).`);
+      }
 
       if (!response.ok || !data.success) {
-        throw new Error(data.error || "Failed to create payment session.");
+        throw new Error(data.error || `Failed to create payment session (HTTP ${response.status}).`);
       }
 
       // Configure Razorpay inline modal options
