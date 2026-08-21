@@ -1,164 +1,111 @@
-import { useState, useMemo } from "react";
-import { ArrowLeft, Users, Briefcase, Check } from "lucide-react";
-import type { SearchParams, Vehicle, ServiceType } from "../lib/types";
-import { VEHICLES } from "../lib/data";
+import { SearchParams, Vehicle } from "../lib/types";
+import { Users, Briefcase, DoorClosed, Check, Car } from "lucide-react";
 
 interface SearchResultsProps {
   searchParams: SearchParams;
-  onBack: () => void;
+  vehicles: Vehicle[];
   onSelectVehicle: (vehicle: Vehicle) => void;
 }
 
 export function SearchResults({
   searchParams,
-  onBack,
+  vehicles,
   onSelectVehicle,
 }: SearchResultsProps) {
-  const [sortBy, setSortBy] = useState<"price" | "passengers">("price");
-
-  const vehiclesWithPricing = useMemo(() => {
-    return VEHICLES.map((v) => {
-      let price = v.basePriceUSD;
-      if (searchParams.serviceType === "transfer") {
-        price = v.basePriceUSD * v.transferMultiplier;
-      } else if (searchParams.serviceType === "car_hire") {
-        price = v.basePriceUSD * v.carHireDailyMultiplier;
-      } else if (searchParams.serviceType === "parking") {
-        price = v.parkingDailyUSD;
-      }
-      return { ...v, priceUSD: price };
-    });
-  }, [searchParams]);
-
-  const filteredVehicles = useMemo(() => {
-    let result = vehiclesWithPricing.filter(
-      (v) => v.passengers >= searchParams.passengers
-    );
-
-    if (sortBy === "price") {
-      result = [...result].sort((a, b) => a.priceUSD - b.priceUSD);
-    } else {
-      result = [...result].sort((a, b) => b.passengers - a.passengers);
-    }
-
-    return result;
-  }, [vehiclesWithPricing, searchParams.passengers, sortBy]);
-
-  const serviceLabel: Record<ServiceType, string> = {
-    transfer: "Airport Transfer",
-    car_hire: "Car Hire",
-    parking: "Airport Parking",
-  };
-
   return (
-    <div className="min-h-screen bg-slate-50 pt-20 pb-12">
-      <div className="bg-white border-b border-slate-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between flex-wrap gap-3">
-          <button
-            onClick={onBack}
-            className="flex items-center gap-2 text-slate-600 hover:text-slate-900 transition-colors text-sm font-medium"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Modify Search
-          </button>
-          <div className="text-xs text-slate-500 flex items-center gap-2">
-            <span className="px-2.5 py-1 rounded-md bg-sky-100 text-sky-700 font-medium">
-              {serviceLabel[searchParams.serviceType]}
-            </span>
-            <span>•</span>
-            <span>{searchParams.pickupLocation}</span>
-          </div>
-        </div>
+    <div className="max-w-7xl mx-auto px-4 py-8">
+      <div className="mb-8">
+        <h2 className="text-2xl font-bold text-slate-900">
+          Available Rides for {searchParams.pickupAirportCode || searchParams.pickupLocation}
+        </h2>
+        <p className="text-slate-500 text-sm mt-1">
+          {searchParams.dropoffLocation
+            ? `Transfer to ${searchParams.dropoffLocation}`
+            : "Select your preferred vehicle option"}
+        </p>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-bold text-slate-900">
-            Available Options ({filteredVehicles.length})
-          </h2>
-          <div className="flex items-center gap-2 text-xs font-medium text-slate-600">
-            <span>Sort by:</span>
-            <button
-              onClick={() => setSortBy("price")}
-              className={`px-3 py-1.5 rounded-lg border transition-all ${
-                sortBy === "price"
-                  ? "bg-sky-500 text-white border-sky-500"
-                  : "bg-white border-slate-200 hover:border-slate-300"
-              }`}
-            >
-              Price
-            </button>
-            <button
-              onClick={() => setSortBy("passengers")}
-              className={`px-3 py-1.5 rounded-lg border transition-all ${
-                sortBy === "passengers"
-                  ? "bg-sky-500 text-white border-sky-500"
-                  : "bg-white border-slate-200 hover:border-slate-300"
-              }`}
-            >
-              Capacity
-            </button>
-          </div>
-        </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {vehicles.map((vehicle) => {
+          const price =
+            searchParams.serviceType === "car_hire"
+              ? vehicle.carHireDailyMultiplier
+              : searchParams.serviceType === "parking"
+              ? vehicle.parkingDailyUSD
+              : Math.round(vehicle.basePriceUSD * vehicle.transferMultiplier);
 
-        <div className="space-y-4">
-          {filteredVehicles.map((vehicle) => (
+          return (
             <div
               key={vehicle.id}
-              className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm hover:shadow-md transition-all flex flex-col md:flex-row items-center justify-between gap-6"
+              className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow flex flex-col"
             >
-              <div className="flex flex-col sm:flex-row items-center gap-6 w-full md:w-auto">
+              <div className="h-48 bg-slate-100 relative overflow-hidden">
                 <img
                   src={vehicle.image}
                   alt={vehicle.name}
-                  className="w-48 h-32 object-cover rounded-xl"
+                  className="w-full h-full object-cover"
                 />
-                <div>
-                  <h3 className="text-lg font-bold text-slate-900">{vehicle.name}</h3>
-                  <p className="text-xs text-slate-500 mt-1">{vehicle.description}</p>
-                  <div className="flex items-center gap-4 mt-3 text-xs text-slate-600">
-                    <span className="flex items-center gap-1">
-                      <Users className="w-3.5 h-3.5 text-slate-400" />
-                      {vehicle.passengers} Passengers
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Briefcase className="w-3.5 h-3.5 text-slate-400" />
-                      {vehicle.luggage} Bags
-                    </span>
-                  </div>
-                  {vehicle.features && (
-                    <div className="flex flex-wrap gap-2 mt-3">
-                      {vehicle.features.map((f, i) => (
-                        <span
-                          key={i}
-                          className="inline-flex items-center gap-1 text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-md font-medium"
-                        >
-                          <Check className="w-3 h-3 text-sky-500" />
-                          {f}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </div>
+                <span className="absolute top-3 right-3 bg-slate-900/80 text-white text-xs font-semibold px-2.5 py-1 rounded-full backdrop-blur-sm capitalize">
+                  {vehicle.class}
+                </span>
               </div>
 
-              <div className="flex flex-row md:flex-col items-center md:items-end justify-between w-full md:w-auto pt-4 md:pt-0 border-t md:border-t-0 border-slate-100">
-                <div className="text-left md:text-right">
-                  <span className="text-2xl font-extrabold text-slate-900">
-                    ${vehicle.priceUSD}
-                  </span>
-                  <span className="text-xs text-slate-500 block">Total estimate</span>
+              <div className="p-5 flex-1 flex flex-col justify-between">
+                <div>
+                  <h3 className="text-lg font-bold text-slate-900">{vehicle.name}</h3>
+                  <p className="text-xs text-slate-500 mt-1 line-clamp-2">
+                    {vehicle.description}
+                  </p>
+
+                  <div className="flex items-center gap-4 my-4 text-slate-600 text-xs font-medium">
+                    <div className="flex items-center gap-1">
+                      <Users className="w-3.5 h-3.5" />
+                      <span>{vehicle.passengers}</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Briefcase className="w-3.5 h-3.5" />
+                      <span>{vehicle.luggage}</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <DoorClosed className="w-3.5 h-3.5" />
+                      <span>{vehicle.doors}</span>
+                    </div>
+                  </div>
+
+                  <ul className="space-y-1.5 mb-6">
+                    {vehicle.features.map((feature, idx) => (
+                      <li key={idx} className="flex items-center gap-2 text-xs text-slate-600">
+                        <Check className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0" />
+                        <span>{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
-                <button
-                  onClick={() => onSelectVehicle(vehicle)}
-                  className="mt-2 px-6 py-2.5 bg-sky-500 hover:bg-sky-600 text-white font-bold text-sm rounded-xl shadow-md transition-all"
-                >
-                  Select Vehicle
-                </button>
+
+                <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
+                  <div>
+                    <span className="text-2xl font-extrabold text-slate-900">${price}</span>
+                    <span className="text-xs text-slate-500 ml-1">
+                      {searchParams.serviceType === "car_hire"
+                        ? "/day"
+                        : searchParams.serviceType === "parking"
+                        ? "/day"
+                        : "total"}
+                    </span>
+                  </div>
+
+                  <button
+                    onClick={() => onSelectVehicle({ ...vehicle, priceUSD: price })}
+                    className="bg-sky-500 hover:bg-sky-600 text-white font-bold text-xs px-5 py-2.5 rounded-xl shadow-md shadow-sky-500/20 transition-all flex items-center gap-1.5"
+                  >
+                    <Car className="w-3.5 h-3.5" />
+                    Select Ride
+                  </button>
+                </div>
               </div>
             </div>
-          ))}
-        </div>
+          );
+        })}
       </div>
     </div>
   );
