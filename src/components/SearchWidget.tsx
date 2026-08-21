@@ -1,14 +1,34 @@
 import { useState, useMemo } from "react";
-import { Plane, Car, ParkingCircle, MapPin, Calendar, Clock, Users, Search, ArrowRight, ChevronRight, Hotel, Repeat, ArrowLeftRight } from "lucide-react";
+import {
+  Plane,
+  Car,
+  ParkingCircle,
+  MapPin,
+  Calendar,
+  Clock,
+  Users,
+  Search,
+  Hotel,
+} from "lucide-react";
 import type { ServiceType, SearchParams } from "../lib/types";
-import { getHotelsForAirport, AIRPORT_DATALIST, getAirportFromLocation, getAirportByCode, getAirportsForCity } from "../lib/data";
+import {
+  getHotelsForAirport,
+  getAreasForAirport,
+  AIRPORT_DATALIST,
+  getAirportFromLocation,
+  getAirportByCode,
+  getAirportsForCity,
+} from "../lib/data";
 
 interface SearchWidgetProps {
   onSearch: (params: SearchParams) => void;
   defaultService?: ServiceType;
 }
 
-export function SearchWidget({ onSearch, defaultService = "transfer" }: SearchWidgetProps) {
+export function SearchWidget({
+  onSearch,
+  defaultService = "transfer",
+}: SearchWidgetProps) {
   const [serviceType, setServiceType] = useState<ServiceType>(defaultService);
   const [pickupLocation, setPickupLocation] = useState("");
   const [dropoffLocation, setDropoffLocation] = useState("");
@@ -19,44 +39,42 @@ export function SearchWidget({ onSearch, defaultService = "transfer" }: SearchWi
   const [roundTrip, setRoundTrip] = useState(false);
   const [passengers, setPassengers] = useState(1);
 
-  const tabs: { type: ServiceType; label: string; icon: typeof Plane; desc: string }[] = [
-    { type: "transfer", label: "Airport Transfers", icon: Plane, desc: "Door-to-door airport rides" },
-    { type: "car_hire", label: "Car Hire", icon: Car, desc: "Self-drive rental cars" },
-    { type: "parking", label: "Airport Parking", icon: ParkingCircle, desc: "Secure airport parking" },
-  ];
-
   const selectedPickupAirport = useMemo(
     () => getAirportFromLocation(pickupLocation),
     [pickupLocation]
   );
 
-  const hotels = useMemo(() => {
-    return getHotelsForAirport(selectedPickupAirport?.code || "");
+  const availableHotels = useMemo(() => {
+    return selectedPickupAirport
+      ? getHotelsForAirport(selectedPickupAirport.code)
+      : [];
+  }, [selectedPickupAirport]);
+
+  const availableAreas = useMemo(() => {
+    return selectedPickupAirport
+      ? getAreasForAirport(selectedPickupAirport.code)
+      : [];
   }, [selectedPickupAirport]);
 
   const arrivalAirport = useMemo(() => {
     if (!dropoffLocation) return undefined;
-
-    // If the customer enters an airport/IATA code, use that exact airport.
     const directAirport = getAirportFromLocation(dropoffLocation);
     if (directAirport) return directAirport;
 
-    // Otherwise resolve a selected hotel to its destination city.
-    const hotelMatch = hotels.find((hotel) =>
-      `${hotel.name}, ${hotel.area}`.toLowerCase() === dropoffLocation.trim().toLowerCase()
+    const hotelMatch = availableHotels.find(
+      (h) => `${h.name}, ${h.address}`.toLowerCase() === dropoffLocation.trim().toLowerCase()
     );
-    if (hotelMatch) return getAirportsForCity(hotelMatch.city)[0];
+    if (hotelMatch && selectedPickupAirport) return selectedPickupAirport;
 
-    // Finally, allow a city name as the destination.
     return getAirportsForCity(dropoffLocation.trim())[0];
-  }, [dropoffLocation, hotels]);
+  }, [dropoffLocation, availableHotels, selectedPickupAirport]);
 
   const handleSubmit = () => {
-    const airport = selectedPickupAirport || getAirportByCode(pickupLocation.trim().toUpperCase());
+    const airport =
+      selectedPickupAirport || getAirportByCode(pickupLocation.trim().toUpperCase());
     if (!airport) return;
 
-    const location = serviceType === "parking" ? airport.code + " - " + airport.name + ", " + airport.city :
-      airport.code + " - " + airport.name + ", " + airport.city;
+    const location = `${airport.code} - ${airport.name}, ${airport.city}`;
 
     onSearch({
       serviceType,
@@ -75,233 +93,155 @@ export function SearchWidget({ onSearch, defaultService = "transfer" }: SearchWi
     });
   };
 
-  const canSubmit = !!selectedPickupAirport && !!pickupDate && (serviceType !== "transfer" || !!dropoffLocation);
+  const canSubmit =
+    !!selectedPickupAirport &&
+    !!pickupDate &&
+    (serviceType !== "transfer" || !!dropoffLocation);
 
   return (
-    <div className="w-full">
-      <div className="flex gap-2 mb-4 flex-wrap">
-        {tabs.map((tab) => (
-          <button
-            key={tab.type}
-            onClick={() => setServiceType(tab.type)}
-            className={`flex items-center gap-2.5 px-4 sm:px-5 py-3 rounded-xl font-medium text-sm transition-all duration-200 ${
-              serviceType === tab.type
-                ? "bg-white text-slate-900 shadow-lg"
-                : "bg-white/10 text-white hover:bg-white/20 backdrop-blur-sm"
-            }`}
-          >
-            <tab.icon className="w-4 h-4" />
-            <span>{tab.label}</span>
-          </button>
-        ))}
+    <div className="w-full bg-white rounded-2xl shadow-xl p-6 border border-slate-200">
+      <div className="flex gap-2 mb-6 border-b border-slate-100 pb-4">
+        {[
+          { type: "transfer", label: "Airport Transfers", icon: Plane },
+          { type: "car_hire", label: "Car Hire", icon: Car },
+          { type: "parking", label: "Airport Parking", icon: ParkingCircle },
+        ].map((tab) => {
+          const Icon = tab.icon;
+          const isActive = serviceType === tab.type;
+          return (
+            <button
+              key={tab.type}
+              onClick={() => setServiceType(tab.type as ServiceType)}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+                isActive
+                  ? "bg-sky-500 text-white shadow-md shadow-sky-500/20"
+                  : "bg-slate-50 text-slate-600 hover:bg-slate-100"
+              }`}
+            >
+              <Icon className="w-4 h-4" />
+              <span>{tab.label}</span>
+            </button>
+          );
+        })}
       </div>
 
-      <div className="bg-white rounded-2xl shadow-2xl p-4 sm:p-6">
-        <p className="text-sm text-slate-500 mb-4 flex items-center gap-2">
-          {tabs.find((t) => t.type === serviceType)?.icon && (
-            <span className="w-8 h-8 rounded-lg bg-sky-100 flex items-center justify-center">
-              {(() => {
-                const TabIcon = tabs.find((t) => t.type === serviceType)!.icon;
-                return <TabIcon className="w-4 h-4 text-sky-600" />;
-              })()}
-            </span>
-          )}
-          {tabs.find((t) => t.type === serviceType)?.desc}
-        </p>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div>
+          <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+            Pickup Airport
+          </label>
+          <div className="relative">
+            <MapPin className="w-4 h-4 absolute left-3 top-3.5 text-slate-400" />
+            <input
+              type="text"
+              list="airports-list"
+              value={pickupLocation}
+              onChange={(e) => setPickupLocation(e.target.value)}
+              placeholder="Search airport or city (e.g., LHR)"
+              className="w-full pl-9 pr-3 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-sky-500 focus:bg-white transition-all"
+            />
+            <datalist id="airports-list">
+              {AIRPORT_DATALIST.map((ap) => (
+                <option key={ap.code} value={`${ap.code} - ${ap.name}`}>
+                  {ap.city}, {ap.country}
+                </option>
+              ))}
+            </datalist>
+          </div>
+        </div>
 
         {serviceType === "transfer" && (
-          <div className="mb-4 flex items-center gap-3">
-            <label className="flex items-center gap-2 cursor-pointer group">
-              <div className={`relative w-11 h-6 rounded-full transition-colors ${roundTrip ? "bg-sky-500" : "bg-slate-300"}`}>
-                <div className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${roundTrip ? "translate-x-5" : "translate-x-0.5"}`} />
-              </div>
-              <span className="text-sm font-medium text-slate-700 flex items-center gap-1.5">
-                <Repeat className="w-3.5 h-3.5 text-slate-400" />
-                Round trip (Both ways)
-              </span>
-              <input type="checkbox" checked={roundTrip} onChange={() => setRoundTrip(!roundTrip)} className="sr-only" />
+          <div>
+            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+              Drop-off / Hotel
             </label>
+            <div className="relative">
+              <Hotel className="w-4 h-4 absolute left-3 top-3.5 text-slate-400" />
+              <input
+                type="text"
+                list="dropoff-options"
+                value={dropoffLocation}
+                onChange={(e) => setDropoffLocation(e.target.value)}
+                placeholder="Hotel, area, or address"
+                className="w-full pl-9 pr-3 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-sky-500 focus:bg-white transition-all"
+              />
+              <datalist id="dropoff-options">
+                {availableHotels.map((h) => (
+                  <option key={h.id} value={`${h.name}, ${h.address}`}>
+                    Hotel in {selectedPickupAirport?.city}
+                  </option>
+                ))}
+                {availableAreas.map((a) => (
+                  <option key={a.id} value={`${a.name}, ${selectedPickupAirport?.city}`}>
+                    Area ({a.type})
+                  </option>
+                ))}
+              </datalist>
+            </div>
           </div>
         )}
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {serviceType === "transfer" && (
-            <>
-              <Field label="Arrival / Pickup Airport" icon={Plane}>
-                <input
-                  list="airport-list"
-                  value={pickupLocation}
-                  onChange={(e) => setPickupLocation(e.target.value)}
-                  placeholder="Select airport (IATA / city / name)"
-                  className="w-full bg-transparent outline-none text-slate-900 placeholder-slate-400 text-sm"
-                />
-              </Field>
-              <Field label="To (Hotel / Destination)" icon={Hotel}>
-                <input
-                  list="hotel-list"
-                  value={dropoffLocation}
-                  onChange={(e) => setDropoffLocation(e.target.value)}
-                  placeholder={hotels.length > 0 ? "Select hotel or enter address" : "Enter destination"}
-                  className="w-full bg-transparent outline-none text-slate-900 placeholder-slate-400 text-sm"
-                />
-              </Field>
-              {selectedPickupAirport && (
-                <div className="sm:col-span-2 lg:col-span-4 -mt-2 px-1 text-xs text-slate-500">
-                  <span className="font-medium text-slate-700">Pickup location:</span> {selectedPickupAirport.name}, {selectedPickupAirport.city} ({selectedPickupAirport.code})
-                  {arrivalAirport && (
-                    <> · <span className="font-medium text-slate-700">Destination airport:</span> {arrivalAirport.name} ({arrivalAirport.code})</>
-                  )}
-                </div>
-              )}
-            </>
-          )}
-
-          {serviceType === "car_hire" && (
-            <Field label="Pick-up Location (Airport)" icon={MapPin}>
-              <input
-                list="airport-list"
-                value={pickupLocation}
-                onChange={(e) => setPickupLocation(e.target.value)}
-                placeholder="City or airport"
-                className="w-full bg-transparent outline-none text-slate-900 placeholder-slate-400 text-sm"
-              />
-            </Field>
-          )}
-
-          {serviceType === "parking" && (
-            <Field label="Airport / Pickup Location" icon={Plane}>
-              <input
-                list="airport-list"
-                value={pickupLocation}
-                onChange={(e) => setPickupLocation(e.target.value)}
-                placeholder="Select airport"
-                className="w-full bg-transparent outline-none text-slate-900 placeholder-slate-400 text-sm"
-              />
-            </Field>
-          )}
-
-          <Field label={serviceType === "car_hire" ? "Pick-up Date" : "Pick-up Date"} icon={Calendar}>
+        <div>
+          <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+            Pickup Date
+          </label>
+          <div className="relative">
+            <Calendar className="w-4 h-4 absolute left-3 top-3.5 text-slate-400" />
             <input
               type="date"
               value={pickupDate}
               onChange={(e) => setPickupDate(e.target.value)}
-              className="w-full bg-transparent outline-none text-slate-900 text-sm"
+              className="w-full pl-9 pr-3 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-sky-500 focus:bg-white transition-all"
             />
-          </Field>
-
-          {serviceType === "car_hire" || serviceType === "parking" ? (
-            <Field label="Return Date" icon={Calendar}>
-              <input
-                type="date"
-                value={returnDate}
-                onChange={(e) => setReturnDate(e.target.value)}
-                className="w-full bg-transparent outline-none text-slate-900 text-sm"
-              />
-            </Field>
-          ) : (
-            <Field label="Pick-up Time" icon={Clock}>
-              <input
-                type="time"
-                value={pickupTime}
-                onChange={(e) => setPickupTime(e.target.value)}
-                className="w-full bg-transparent outline-none text-slate-900 text-sm"
-              />
-            </Field>
-          )}
-
-          <Field label="Adults" icon={Users}>
-            <select
-              value={passengers}
-              onChange={(e) => setPassengers(Number(e.target.value))}
-              className="w-full bg-transparent outline-none text-slate-900 text-sm cursor-pointer"
-            >
-              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16].map((n) => (
-                <option key={n} value={n}>
-                  {n} {n === 1 ? "adult" : "adults"}
-                </option>
-              ))}
-            </select>
-          </Field>
+          </div>
         </div>
 
-        {serviceType === "transfer" && roundTrip && (
-          <div className="mt-4 p-4 rounded-xl bg-sky-50 border border-sky-200">
-            <div className="flex items-center gap-2 mb-3">
-              <ArrowLeftRight className="w-4 h-4 text-sky-600" />
-              <span className="text-sm font-semibold text-sky-800">Return Trip Details</span>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Field label="Return Date" icon={Calendar}>
-                <input
-                  type="date"
-                  value={returnDate}
-                  onChange={(e) => setReturnDate(e.target.value)}
-                  className="w-full bg-transparent outline-none text-slate-900 text-sm"
-                />
-              </Field>
-              <Field label="Return Time" icon={Clock}>
-                <input
-                  type="time"
-                  value={returnTime}
-                  onChange={(e) => setReturnTime(e.target.value)}
-                  className="w-full bg-transparent outline-none text-slate-900 text-sm"
-                />
-              </Field>
-            </div>
+        <div>
+          <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+            Time
+          </label>
+          <div className="relative">
+            <Clock className="w-4 h-4 absolute left-3 top-3.5 text-slate-400" />
+            <input
+              type="time"
+              value={pickupTime}
+              onChange={(e) => setPickupTime(e.target.value)}
+              className="w-full pl-9 pr-3 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-sky-500 focus:bg-white transition-all"
+            />
           </div>
-        )}
-
-        <button
-          onClick={handleSubmit}
-          disabled={!canSubmit}
-          className="w-full mt-5 flex items-center justify-center gap-2 bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 disabled:from-slate-300 disabled:to-slate-400 text-white font-semibold py-3.5 rounded-xl transition-all duration-200 shadow-lg shadow-sky-500/30 disabled:shadow-none group"
-        >
-          <Search className="w-5 h-5 group-hover:scale-110 transition-transform" />
-          Search {tabs.find((t) => t.type === serviceType)?.label}
-          <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-        </button>
-
-        {!canSubmit && (
-          <p className="text-xs text-slate-400 mt-2 text-center flex items-center justify-center gap-1">
-            <ChevronRight className="w-3 h-3" />
-            Please fill in all required fields
-          </p>
-        )}
+        </div>
       </div>
 
-      <datalist id="airport-list">
-        {AIRPORT_DATALIST.map((a) => (
-          <option key={a.code} value={a.value}>
-            {a.label}
-          </option>
-        ))}
-      </datalist>
+      <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-slate-100">
+        <div className="flex items-center gap-2">
+          <Users className="w-4 h-4 text-slate-500" />
+          <span className="text-xs font-bold text-slate-700 uppercase">Passengers:</span>
+          <select
+            value={passengers}
+            onChange={(e) => setPassengers(Number(e.target.value))}
+            className="bg-slate-50 border border-slate-200 text-sm font-semibold rounded-lg px-2.5 py-1.5 outline-none focus:border-sky-500"
+          >
+            {[1, 2, 3, 4, 5, 6, 7, 8].map((num) => (
+              <option key={num} value={num}>
+                {num} {num === 1 ? "Passenger" : "Passengers"}
+              </option>
+            ))}
+          </select>
+        </div>
 
-      <datalist id="hotel-list">
-        {hotels.map((h) => (
-          <option key={h.id} value={`${h.name}, ${h.area}`} />
-        ))}
-      </datalist>
-    </div>
-  );
-}
-
-function Field({
-  label,
-  icon: Icon,
-  children,
-}: {
-  label: string;
-  icon: typeof MapPin;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="bg-slate-50 rounded-xl border border-slate-200 px-4 py-2.5 hover:border-sky-300 transition-colors group">
-      <label className="text-[11px] font-medium text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-        <Icon className="w-3 h-3" />
-        {label}
-      </label>
-      <div className="mt-0.5">{children}</div>
+        <button
+          disabled={!canSubmit}
+          onClick={handleSubmit}
+          className={`w-full sm:w-auto px-8 py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 shadow-lg transition-all ${
+            canSubmit
+              ? "bg-sky-500 hover:bg-sky-600 text-white shadow-sky-500/25"
+              : "bg-slate-200 text-slate-400 cursor-not-allowed"
+          }`}
+        >
+          <Search className="w-4 h-4" />
+          Search Rides
+        </button>
+      </div>
     </div>
   );
 }
