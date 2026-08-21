@@ -1,4 +1,4 @@
-import type { Vehicle, Airport, Hotel, Area } from "./types";
+import type { Vehicle, Airport, Hotel, Area, Destination } from "./types";
 
 export const VEHICLES: Vehicle[] = [
   {
@@ -60,6 +60,148 @@ export const VEHICLES: Vehicle[] = [
     transferMultiplier: 2.2,
     carHireDailyMultiplier: 110,
     parkingDailyUSD: 18,
+  },
+];
+
+export const DESTINATIONS: Destination[] = [
+  {
+    id: "london",
+    city: "London",
+    country: "United Kingdom",
+    airportCode: "LHR",
+    airportName: "London Heathrow Airport",
+    image: "https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?auto=format&fit=crop&q=80&w=800",
+    popular: true,
+  },
+  {
+    id: "dubai",
+    city: "Dubai",
+    country: "United Arab Emirates",
+    airportCode: "DXB",
+    airportName: "Dubai International Airport",
+    image: "https://images.unsplash.com/photo-1512453979798-5ea266f8880c?auto=format&fit=crop&q=80&w=800",
+    popular: true,
+  },
+  {
+    id: "new-york",
+    city: "New York",
+    country: "United States",
+    airportCode: "JFK",
+    airportName: "John F. Kennedy International Airport",
+    image: "https://images.unsplash.com/photo-1496442226666-8d4d0e62e6e9?auto=format&fit=crop&q=80&w=800",
+    popular: true,
+  },
+  {
+    id: "paris",
+    city: "Paris",
+    country: "France",
+    airportCode: "CDG",
+    airportName: "Charles de Gaulle Airport",
+    image: "https://images.unsplash.com/photo-1502602898657-3e91760cbb34?auto=format&fit=crop&q=80&w=800",
+    popular: true,
+  },
+  {
+    id: "tokyo",
+    city: "Tokyo",
+    country: "Japan",
+    airportCode: "NRT",
+    airportName: "Narita International Airport",
+    image: "https://images.unsplash.com/photo-1503899036084-c55cdd92da26?auto=format&fit=crop&q=80&w=800",
+    popular: true,
+  },
+  {
+    id: "singapore",
+    city: "Singapore",
+    country: "Singapore",
+    airportCode: "SIN",
+    airportName: "Changi Airport",
+    image: "https://images.unsplash.com/photo-1525625293386-3f8f99389edd?auto=format&fit=crop&q=80&w=800",
+    popular: true,
+  },
+];
+
+export interface PopularDestination {
+  id: string;
+  city: string;
+  airport: string;
+  code: string;
+  image: string;
+}
+
+export const POPULAR_DESTINATIONS: PopularDestination[] = [
+  {
+    id: "london",
+    city: "London",
+    airport: "Heathrow Airport",
+    code: "LHR",
+    image: "https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?auto=format&fit=crop&q=80&w=800",
+  },
+  {
+    id: "dubai",
+    city: "Dubai",
+    airport: "Dubai International Airport",
+    code: "DXB",
+    image: "https://images.unsplash.com/photo-1512453979798-5ea266f8880c?auto=format&fit=crop&q=80&w=800",
+  },
+  {
+    id: "new-york",
+    city: "New York",
+    airport: "John F. Kennedy International",
+    code: "JFK",
+    image: "https://images.unsplash.com/photo-1496442226666-8d4d0e62e6e9?auto=format&fit=crop&q=80&w=800",
+  },
+  {
+    id: "paris",
+    city: "Paris",
+    airport: "Charles de Gaulle Airport",
+    code: "CDG",
+    image: "https://images.unsplash.com/photo-1502602898657-3e91760cbb34?auto=format&fit=crop&q=80&w=800",
+  },
+  {
+    id: "tokyo",
+    city: "Tokyo",
+    airport: "Narita International Airport",
+    code: "NRT",
+    image: "https://images.unsplash.com/photo-1503899036084-c55cdd92da26?auto=format&fit=crop&q=80&w=800",
+  },
+  {
+    id: "singapore",
+    city: "Singapore",
+    airport: "Changi Airport",
+    code: "SIN",
+    image: "https://images.unsplash.com/photo-1525625293386-3f8f99389edd?auto=format&fit=crop&q=80&w=800",
+  },
+];
+
+export interface ServiceOption {
+  id: "transfer" | "car_hire" | "parking";
+  title: string;
+  subtitle: string;
+  description: string;
+  iconName: string;
+}
+
+export const SERVICES: ServiceOption[] = [
+  {
+    id: "transfer",
+    title: "Airport Transfers",
+    subtitle: "Door-to-door rides worldwide",
+    description: "Direct door-to-door private airport pickups with flight tracking and transparent upfront rates.",
+    iconName: "Plane",
+  },
+  {
+    id: "car_hire",
+    title: "Car Hire",
+    subtitle: "Drive at your own pace",
+    description: "Self-drive vehicle rentals with flexible pickup locations and unlimited mileage options.",
+    iconName: "Car",
+  },
+  {
+    id: "parking",
+    title: "Airport Parking",
+    subtitle: "Secure parking options",
+    description: "Secure terminal & off-site reserved parking spots with 24/7 CCTV surveillance.",
+    iconName: "ParkingCircle",
   },
 ];
 
