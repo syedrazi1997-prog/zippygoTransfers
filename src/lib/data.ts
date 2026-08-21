@@ -1,4 +1,156 @@
-import type { Airport, Hotel, Area } from "./types";
+import type { Vehicle, Airport, Hotel, Area, Destination } from "./types";
+
+export const VEHICLES: Vehicle[] = [
+  {
+    id: "economy-sedan",
+    name: "Economy Sedan",
+    class: "economy",
+    image: "https://images.pexels.com/photos/28673504/pexels-photo-28673504.jpeg?auto=compress&cs=tinysrgb&w=800",
+    passengers: 3,
+    luggage: 2,
+    doors: 4,
+    basePriceUSD: 35,
+    description: "Comfortable and efficient for solo travelers and couples. Perfect for direct city-to-airport transfers.",
+    features: ["Air conditioning", "Free Wi-Fi", "Professional driver", "Bottled water"],
+    transferMultiplier: 1,
+    carHireDailyMultiplier: 42,
+    parkingDailyUSD: 8,
+  },
+  {
+    id: "executive-sedan",
+    name: "Executive Sedan",
+    class: "executive",
+    image: "https://images.pexels.com/photos/14764071/pexels-photo-14764071.jpeg?auto=compress&cs=tinysrgb&w=800",
+    passengers: 3,
+    luggage: 3,
+    doors: 4,
+    basePriceUSD: 65,
+    description: "Premium sedan designed for business travelers. Offers leather interiors and a smooth, quiet ride.",
+    features: ["Leather seats", "Free Wi-Fi", "Phone chargers", "Bottled water", "Meet & greet"],
+    transferMultiplier: 1.6,
+    carHireDailyMultiplier: 78,
+    parkingDailyUSD: 12,
+  },
+  {
+    id: "luxury-sedan",
+    name: "Luxury Sedan",
+    class: "luxury",
+    image: "https://images.pexels.com/photos/3764984/pexels-photo-3764984.jpeg?auto=compress&cs=tinysrgb&w=800",
+    passengers: 3,
+    luggage: 3,
+    doors: 4,
+    basePriceUSD: 110,
+    description: "Top-tier luxury vehicles for high-profile business or special occasion transfers.",
+    features: ["First-class comfort", "Wi-Fi & chargers", "Premium audio", "Chauffeur service"],
+    transferMultiplier: 2.5,
+    carHireDailyMultiplier: 150,
+    parkingDailyUSD: 20,
+  },
+  {
+    id: "passenger-van",
+    name: "Executive Van / Minivan",
+    class: "van",
+    image: "https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?auto=format&fit=crop&q=80&w=800",
+    passengers: 7,
+    luggage: 7,
+    doors: 5,
+    basePriceUSD: 95,
+    description: "Spacious multi-seater van perfect for larger families, tour groups, or extra luggage requirements.",
+    features: ["Extra luggage space", "Leather seating", "Climate control", "Child seat available"],
+    transferMultiplier: 2.2,
+    carHireDailyMultiplier: 110,
+    parkingDailyUSD: 18,
+  },
+];
+
+export const DESTINATIONS: Destination[] = [
+  {
+    id: "london",
+    city: "London",
+    country: "United Kingdom",
+    airportCode: "LHR",
+    airportName: "London Heathrow Airport",
+    image: "https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?auto=format&fit=crop&q=80&w=800",
+    popular: true,
+  },
+  {
+    id: "dubai",
+    city: "Dubai",
+    country: "United Arab Emirates",
+    airportCode: "DXB",
+    airportName: "Dubai International Airport",
+    image: "https://images.unsplash.com/photo-1512453979798-5ea266f8880c?auto=format&fit=crop&q=80&w=800",
+    popular: true,
+  },
+  {
+    id: "new-york",
+    city: "New York",
+    country: "United States",
+    airportCode: "JFK",
+    airportName: "John F. Kennedy International Airport",
+    image: "https://images.unsplash.com/photo-1496442226666-8d4d0e62e6e9?auto=format&fit=crop&q=80&w=800",
+    popular: true,
+  },
+  {
+    id: "paris",
+    city: "Paris",
+    country: "France",
+    airportCode: "CDG",
+    airportName: "Charles de Gaulle Airport",
+    image: "https://images.unsplash.com/photo-1502602898657-3e91760cbb34?auto=format&fit=crop&q=80&w=800",
+    popular: true,
+  },
+  {
+    id: "tokyo",
+    city: "Tokyo",
+    country: "Japan",
+    airportCode: "NRT",
+    airportName: "Narita International Airport",
+    image: "https://images.unsplash.com/photo-1503899036084-c55cdd92da26?auto=format&fit=crop&q=80&w=800",
+    popular: true,
+  },
+  {
+    id: "singapore",
+    city: "Singapore",
+    country: "Singapore",
+    airportCode: "SIN",
+    airportName: "Changi Airport",
+    image: "https://images.unsplash.com/photo-1525625293386-3f8f99389edd?auto=format&fit=crop&q=80&w=800",
+    popular: true,
+  },
+];
+
+export interface ServiceOption {
+  id: "transfer" | "car_hire" | "parking";
+  title: string;
+  subtitle: string;
+  description: string;
+  iconName: string;
+}
+
+export const SERVICES: ServiceOption[] = [
+  {
+    id: "transfer",
+    title: "Airport Transfers",
+    subtitle: "Door-to-door rides worldwide",
+    description: "Direct door-to-door private airport pickups with flight tracking and transparent upfront rates.",
+    iconName: "Plane",
+  },
+  {
+    id: "car_hire",
+    title: "Car Hire",
+    subtitle: "Drive at your own pace",
+    description: "Self-drive vehicle rentals with flexible pickup locations and unlimited mileage options.",
+    iconName: "Car",
+  },
+  {
+    id: "parking",
+    title: "Airport Parking",
+    subtitle: "Secure parking options",
+    description: "Secure terminal & off-site reserved parking spots with 24/7 CCTV surveillance.",
+    iconName: "ParkingCircle",
+  },
+];
 
 export const AIRPORT_DATALIST: Airport[] = [
   {
@@ -96,7 +248,6 @@ export function getAirportByCode(code: string): Airport | undefined {
 export function getAirportFromLocation(locationStr: string): Airport | undefined {
   if (!locationStr) return undefined;
   
-  // Look for 3-letter code inside brackets or exact match
   const codeMatch = locationStr.match(/\(([A-Z]{3})\)/) || locationStr.match(/^([A-Z]{3})\b/i);
   if (codeMatch) {
     const airport = getAirportByCode(codeMatch[1]);
