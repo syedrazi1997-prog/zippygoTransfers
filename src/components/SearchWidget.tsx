@@ -9,7 +9,6 @@ import {
   Users,
   Search,
   Hotel,
-  Building,
 } from "lucide-react";
 import type { ServiceType, SearchParams } from "../lib/types";
 import {
@@ -40,20 +39,17 @@ export function SearchWidget({
   const [roundTrip, setRoundTrip] = useState(false);
   const [passengers, setPassengers] = useState(1);
 
-  // Triggered dynamically whenever pickupLocation changes
   const selectedPickupAirport = useMemo(
     () => getAirportFromLocation(pickupLocation),
     [pickupLocation]
   );
 
-  // Trigger hotels for the selected airport code
   const availableHotels = useMemo(() => {
     return selectedPickupAirport
       ? getHotelsForAirport(selectedPickupAirport.code)
       : [];
   }, [selectedPickupAirport]);
 
-  // Trigger popular areas for the selected airport code
   const availableAreas = useMemo(() => {
     return selectedPickupAirport
       ? getAreasForAirport(selectedPickupAirport.code)
@@ -130,7 +126,6 @@ export function SearchWidget({
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Worldwide Airport Code Input */}
         <div>
           <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
             Pickup Airport Code / City
@@ -155,7 +150,6 @@ export function SearchWidget({
           </div>
         </div>
 
-        {/* Dynamic Hotels and Areas triggered by Airport Code */}
         {serviceType === "transfer" && (
           <div>
             <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
