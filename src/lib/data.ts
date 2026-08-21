@@ -1,4 +1,4 @@
-import type { Vehicle, Destination, Airport, Hotel } from "./types";
+import type { Vehicle } from "./types";
 
 export const VEHICLES: Vehicle[] = [
   {
@@ -10,7 +10,7 @@ export const VEHICLES: Vehicle[] = [
     luggage: 2,
     doors: 4,
     basePriceUSD: 35,
-    description: "Comfortable and efficient for solo travelers and couples. Perfect for city-to-airport transfers.",
+    description: "Comfortable and efficient for solo travelers and couples. Perfect for direct city-to-airport transfers.",
     features: ["Air conditioning", "Free Wi-Fi", "Professional driver", "Bottled water"],
     transferMultiplier: 1,
     carHireDailyMultiplier: 42,
@@ -25,7 +25,7 @@ export const VEHICLES: Vehicle[] = [
     luggage: 3,
     doors: 4,
     basePriceUSD: 65,
-    description: "Premium sedan for business travelers. Leather interiors and a smooth, quiet ride.",
+    description: "Premium sedan designed for business travelers. Offers leather interiors and a smooth, quiet ride.",
     features: ["Leather seats", "Free Wi-Fi", "Phone chargers", "Bottled water", "Meet & greet"],
     transferMultiplier: 1.6,
     carHireDailyMultiplier: 78,
