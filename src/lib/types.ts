@@ -36,3 +36,30 @@ export interface Airport {
   hotels: Hotel[];
   areas: Area[];
 }
+
+export interface Destination {
+  id: string;
+  city: string;
+  country: string;
+  airportCode: string;
+  airportName: string;
+  image: string;
+  popular?: boolean;
+}
+
+export interface Vehicle {
+  id: string;
+  name: string;
+  class: "economy" | "executive" | "luxury" | "van";
+  image: string;
+  passengers: number;
+  luggage: number;
+  doors: number;
+  basePriceUSD: number;
+  description: string;
+  features: string[];
+  transferMultiplier: number;
+  carHireDailyMultiplier: number;
+  parkingDailyUSD: number;
+  priceUSD?: number;
+}
