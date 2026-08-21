@@ -1,4 +1,4 @@
-import type { Vehicle, Airport, Hotel } from "./types";
+import type { Vehicle, Airport, Hotel, Area } from "./types";
 
 export const VEHICLES: Vehicle[] = [
   {
@@ -63,91 +63,6 @@ export const VEHICLES: Vehicle[] = [
   },
 ];
 
-export interface PopularDestination {
-  id: string;
-  city: string;
-  airport: string;
-  code: string;
-  image: string;
-}
-
-export const POPULAR_DESTINATIONS: PopularDestination[] = [
-  {
-    id: "london",
-    city: "London",
-    airport: "Heathrow Airport",
-    code: "LHR",
-    image: "https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?auto=format&fit=crop&q=80&w=800",
-  },
-  {
-    id: "dubai",
-    city: "Dubai",
-    airport: "Dubai International Airport",
-    code: "DXB",
-    image: "https://images.unsplash.com/photo-1512453979798-5ea266f8880c?auto=format&fit=crop&q=80&w=800",
-  },
-  {
-    id: "new-york",
-    city: "New York",
-    airport: "John F. Kennedy International",
-    code: "JFK",
-    image: "https://images.unsplash.com/photo-1496442226666-8d4d0e62e6e9?auto=format&fit=crop&q=80&w=800",
-  },
-  {
-    id: "paris",
-    city: "Paris",
-    airport: "Charles de Gaulle Airport",
-    code: "CDG",
-    image: "https://images.unsplash.com/photo-1502602898657-3e91760cbb34?auto=format&fit=crop&q=80&w=800",
-  },
-  {
-    id: "tokyo",
-    city: "Tokyo",
-    airport: "Narita International Airport",
-    code: "NRT",
-    image: "https://images.unsplash.com/photo-1503899036084-c55cdd92da26?auto=format&fit=crop&q=80&w=800",
-  },
-  {
-    id: "singapore",
-    city: "Singapore",
-    airport: "Changi Airport",
-    code: "SIN",
-    image: "https://images.unsplash.com/photo-1525625293386-3f8f99389edd?auto=format&fit=crop&q=80&w=800",
-  },
-];
-
-export interface ServiceOption {
-  id: "transfer" | "car_hire" | "parking";
-  title: string;
-  subtitle: string;
-  description: string;
-  iconName: string;
-}
-
-export const SERVICES: ServiceOption[] = [
-  {
-    id: "transfer",
-    title: "Airport Transfers",
-    subtitle: "Door-to-door rides worldwide",
-    description: "Direct door-to-door private airport pickups with flight tracking and transparent upfront rates.",
-    iconName: "Plane",
-  },
-  {
-    id: "car_hire",
-    title: "Car Hire",
-    subtitle: "Drive at your own pace",
-    description: "Self-drive vehicle rentals with flexible pickup locations and unlimited mileage options.",
-    iconName: "Car",
-  },
-  {
-    id: "parking",
-    title: "Airport Parking",
-    subtitle: "Secure parking options",
-    description: "Secure terminal & off-site reserved parking spots with 24/7 CCTV surveillance.",
-    iconName: "ParkingCircle",
-  },
-];
-
 export const AIRPORT_DATALIST: Airport[] = [
   {
     code: "LHR",
@@ -158,6 +73,13 @@ export const AIRPORT_DATALIST: Airport[] = [
       { id: "h1", name: "The Ritz London", address: "150 Piccadilly, London W1J 9BR" },
       { id: "h2", name: "The Savoy", address: "Strand, London WC2R 0EZ" },
       { id: "h3", name: "Hilton London Heathrow Airport", address: "Terminal 4, Heathrow" },
+      { id: "h4", name: "Sofitel London Heathrow", address: "Terminal 5, Heathrow" },
+    ],
+    areas: [
+      { id: "a1", name: "Central London / Westminster", type: "city_center" },
+      { id: "a2", name: "Kensington & Chelsea", type: "district" },
+      { id: "a3", name: "Canary Wharf & Docklands", type: "district" },
+      { id: "a4", name: "Mayfair & Soho", type: "district" },
     ],
   },
   {
@@ -166,9 +88,16 @@ export const AIRPORT_DATALIST: Airport[] = [
     city: "Dubai",
     country: "United Arab Emirates",
     hotels: [
-      { id: "h4", name: "Burj Al Arab", address: "Jumeirah St, Dubai" },
-      { id: "h5", name: "Atlantis The Palm", address: "Crescent Rd, Dubai" },
-      { id: "h6", name: "JW Marriott Marquis Hotel", address: "Business Bay, Dubai" },
+      { id: "h5", name: "Burj Al Arab", address: "Jumeirah St, Dubai" },
+      { id: "h6", name: "Atlantis The Palm", address: "Crescent Rd, Dubai" },
+      { id: "h7", name: "JW Marriott Marquis Hotel", address: "Business Bay, Dubai" },
+      { id: "h8", name: "Address Downtown", address: "Downtown Dubai" },
+    ],
+    areas: [
+      { id: "a5", name: "Downtown Dubai & Burj Khalifa", type: "city_center" },
+      { id: "a6", name: "Dubai Marina & JBR", type: "district" },
+      { id: "a7", name: "Palm Jumeirah", type: "landmark" },
+      { id: "a8", name: "Deira & Bur Dubai", type: "district" },
     ],
   },
   {
@@ -177,8 +106,15 @@ export const AIRPORT_DATALIST: Airport[] = [
     city: "New York",
     country: "United States",
     hotels: [
-      { id: "h7", name: "The Plaza Hotel", address: "768 5th Ave, New York" },
-      { id: "h8", name: "TWA Hotel", address: "JFK Airport, Queens, NY" },
+      { id: "h9", name: "The Plaza Hotel", address: "768 5th Ave, New York" },
+      { id: "h10", name: "TWA Hotel", address: "JFK Airport, Queens, NY" },
+      { id: "h11", name: "The St. Regis New York", address: "Two E 55th St, New York" },
+    ],
+    areas: [
+      { id: "a9", name: "Midtown Manhattan", type: "city_center" },
+      { id: "a10", name: "Lower Manhattan / Financial District", type: "district" },
+      { id: "a11", name: "Brooklyn Heights & DUMBO", type: "district" },
+      { id: "a12", name: "Queens & Flushing", type: "suburb" },
     ],
   },
   {
@@ -187,8 +123,15 @@ export const AIRPORT_DATALIST: Airport[] = [
     city: "Paris",
     country: "France",
     hotels: [
-      { id: "h9", name: "Ritz Paris", address: "15 Place Vendôme, Paris" },
-      { id: "h10", name: "Pullman Paris Roissy CDG", address: "Roissypole, CDG Airport" },
+      { id: "h12", name: "Ritz Paris", address: "15 Place Vendôme, Paris" },
+      { id: "h13", name: "Pullman Paris Roissy CDG", address: "Roissypole, CDG Airport" },
+      { id: "h14", name: "Four Seasons Hotel George V", address: "31 Av. George V, Paris" },
+    ],
+    areas: [
+      { id: "a13", name: "Le Marais & 1st Arrondissement", type: "city_center" },
+      { id: "a14", name: "Champs-Élysées & 8th Arrondissement", type: "district" },
+      { id: "a15", name: "Montmartre & 18th Arrondissement", type: "district" },
+      { id: "a16", name: "Latin Quarter & 5th Arrondissement", type: "district" },
     ],
   },
 ];
@@ -211,6 +154,12 @@ export function getHotelsForAirport(airportCode: string): Hotel[] {
   if (!airportCode) return [];
   const airport = getAirportByCode(airportCode);
   return airport?.hotels || [];
+}
+
+export function getAreasForAirport(airportCode: string): Area[] {
+  if (!airportCode) return [];
+  const airport = getAirportByCode(airportCode);
+  return airport?.areas || [];
 }
 
 export function getAirportsForCity(city: string): Airport[] {
