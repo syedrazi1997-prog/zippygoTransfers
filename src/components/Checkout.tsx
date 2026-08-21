@@ -19,7 +19,6 @@ import { calculateVehiclePriceUSD, PRICE_MARGIN } from "../lib/pricing";
 
 declare const Razorpay: any;
 
-// Replace with your exact Render Web Service URL if different
 const BACKEND_URL = "https://zippygo-transfers-backend.onrender.com";
 
 interface CheckoutProps {
@@ -59,7 +58,7 @@ export function Checkout({
   const [flightNumber, setFlightNumber] = useState("");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
+  const [phone, setPhone] = useState("+919177902449");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -75,7 +74,6 @@ export function Checkout({
 
   const totalUSD = basePrice + extrasTotal;
 
-  // Load Razorpay SDK script dynamically
   useEffect(() => {
     const script = document.createElement("script");
     script.src = "https://checkout.razorpay.com/v1/checkout.js";
@@ -122,7 +120,6 @@ export function Checkout({
 
       const bookingRef = `ZGO-${Date.now().toString(36).toUpperCase()}`;
 
-      // Request order creation from explicit Render Backend URL
       const response = await fetch(`${BACKEND_URL}/api/create-razorpay-order`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -151,7 +148,6 @@ export function Checkout({
         }),
       });
 
-      // Safely parse JSON response
       const rawText = await response.text();
       let data: any = {};
 
@@ -165,7 +161,6 @@ export function Checkout({
         throw new Error(data.error || `Failed to create payment session (HTTP ${response.status}).`);
       }
 
-      // Configure Razorpay modal options
       const options = {
         key: data.key_id,
         amount: data.amount,
@@ -355,7 +350,7 @@ export function Checkout({
                   label="Phone"
                   value={phone}
                   onChange={setPhone}
-                  placeholder="9876543210"
+                  placeholder="+919177902449"
                   type="tel"
                   required
                 />
@@ -412,9 +407,6 @@ export function Checkout({
                 <div className="flex justify-between text-slate-600">
                   <span>Taxes & fees</span>
                   <span className="text-green-600 font-medium">Included</span>
-                </div>
-                <div className="text-[11px] text-slate-400 pt-1">
-                  Price = {formatPrice(perPersonPrice, currency)} per passenger × {pricing.passengerCount}. 5% margin included.
                 </div>
               </div>
 
