@@ -3,37 +3,46 @@ import type { SearchParams, Vehicle } from "./types";
 export const PRICE_MARGIN = 1.05;
 
 export interface VehiclePricing {
-  /** Customer-facing price for exactly one passenger, before any extras. */
+  /** Customer-facing transfer price for one passenger, before passenger multiplication. */
   perPersonUSD: number;
-  /** Total transfer/car/parking price for the requested passenger count. */
+  /** Total price for the booking in USD, including passengers where applicable. */
   totalUSD: number;
-  /** Supplier quote after the 5% margin, for one passenger. */
+  /** Supplier quote after the 5% margin, for one passenger (transfer) or the full rental/parking duration (hire/parking). */
   supplierPerPersonUSD: number;
   passengerCount: number;
   days: number;
+  /** Customer-facing daily rate for car hire/parking. Undefined for transfers. */
+  dailyRateUSD?: number;
+  /** Whether the price is charged per passenger rather than per vehicle/booking. */
+  isPerPerson: boolean;
   unit: string;
 }
 
+/**
+ * Returns the billable duration in whole days.
+ *
+ * Car hire and airport parking are charged for the complete period between
+ * pickup/entry and return/exit. Partial days are rounded up, with a minimum
+ * of one day.
+ */
 export function getDurationDays(searchParams: SearchParams): number {
-  if (searchParams.returnDate && searchParams.pickupDate) {
-    const diff = Math.ceil(
-      (new Date(searchParams.returnDate).getTime() -
-        new Date(searchParams.pickupDate).getTime()) /
-        (1000 * 60 * 60 * 24)
-    );
-    return Math.max(diff, 1);
+  if (!searchParams.roundTrip || !searchParams.returnDate || !searchParams.pickupDate) return 1;
+
+  const pickup = new Date(`${searchParams.pickupDate}T${searchParams.pickupTime || "00:00"}`);
+  const returned = new Date(`${searchParams.returnDate}T${searchParams.returnTime || "23:59"}`);
+
+  if (!Number.isNaN(pickup.getTime()) && !Number.isNaN(returned.getTime()) && returned.getTime() >= pickup.getTime()) {
+    const durationHours = (returned.getTime() - pickup.getTime()) / (1000 * 60 * 60);
+    return Math.max(1, Math.ceil(durationHours / 24));
   }
-  return 1;
+
+  const diff = Math.ceil(
+    (new Date(searchParams.returnDate).getTime() - new Date(searchParams.pickupDate).getTime()) /
+      (1000 * 60 * 60 * 24)
+  );
+  return Math.max(diff, 1);
 }
 
-/**
- * Pricing is strictly per passenger.
- *
- * The supplier/base vehicle rate is treated as a one-passenger rate. The
- * ZippyGo 5% margin is applied once to that rate, then the result is
- * multiplied by the exact number of passengers selected by the customer.
- * No minimum of two passengers is applied.
- */
 export function calculateVehiclePriceUSD(
   vehicle: Vehicle,
   searchParams: SearchParams
@@ -41,33 +50,43 @@ export function calculateVehiclePriceUSD(
   const passengerCount = Math.max(1, Math.floor(Number(searchParams.passengers) || 1));
   const days = getDurationDays(searchParams);
 
-  let supplierPerPersonUSD: number;
-
   if (searchParams.serviceType === "transfer") {
-    supplierPerPersonUSD = vehicle.basePriceUSD * vehicle.transferMultiplier;
+    let supplierPerPersonUSD = vehicle.basePriceUSD * vehicle.transferMultiplier;
     const transferMode = vehicle.transferMode || searchParams.transferMode || "private";
     if (transferMode === "shuttle") supplierPerPersonUSD *= 0.82;
     if (searchParams.roundTrip) supplierPerPersonUSD *= 2;
-  } else if (searchParams.serviceType === "car_hire") {
-    supplierPerPersonUSD = vehicle.basePriceUSD * vehicle.carHireDailyMultiplier * days;
-  } else {
-    supplierPerPersonUSD = vehicle.parkingDailyUSD * days;
+
+    const perPersonUSD = supplierPerPersonUSD * PRICE_MARGIN;
+    const totalUSD = perPersonUSD * passengerCount;
+
+    return {
+      perPersonUSD,
+      totalUSD,
+      supplierPerPersonUSD,
+      passengerCount,
+      days,
+      isPerPerson: true,
+      unit: `${transferMode === "shuttle" ? "shared shuttle" : "private transfer"} · ${searchParams.roundTrip ? "return trip" : "one way"} · ${passengerCount} passenger${passengerCount === 1 ? "" : "s"}`,
+    };
   }
 
-  const perPersonUSD = supplierPerPersonUSD * PRICE_MARGIN;
-  const totalUSD = perPersonUSD * passengerCount;
-
-  const unit =
-    searchParams.serviceType === "transfer"
-      ? `${vehicle.transferMode === "shuttle" ? "shared shuttle" : "private transfer"} · ${searchParams.roundTrip ? "return trip" : "one way"} · ${passengerCount} passenger${passengerCount === 1 ? "" : "s"}`
-      : `per person · ${days} day${days > 1 ? "s" : ""} · ${passengerCount} passenger${passengerCount === 1 ? "" : "s"}`;
+  // Car hire and airport parking are priced per vehicle/booking, not per passenger.
+  // The return/exit date and time determine the number of billable days.
+  const rawDailyUSD =
+    searchParams.serviceType === "car_hire"
+      ? vehicle.carHireDailyMultiplier
+      : vehicle.parkingDailyUSD;
+  const dailyRateUSD = rawDailyUSD * PRICE_MARGIN;
+  const totalUSD = dailyRateUSD * days;
 
   return {
-    perPersonUSD,
+    perPersonUSD: totalUSD,
     totalUSD,
-    supplierPerPersonUSD,
+    supplierPerPersonUSD: rawDailyUSD * days,
     passengerCount,
     days,
-    unit,
+    dailyRateUSD,
+    isPerPerson: false,
+    unit: `${searchParams.serviceType === "car_hire" ? "car hire" : "airport parking"} · ${days} day${days === 1 ? "" : "s"}`,
   };
 }
