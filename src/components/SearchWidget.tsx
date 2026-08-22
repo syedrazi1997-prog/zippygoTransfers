@@ -110,17 +110,16 @@ export function SearchWidget({ onSearch, defaultService = "transfer" }: SearchWi
         </div>}
         <div><label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Pickup Date</label><div className="relative"><Calendar className="w-4 h-4 absolute left-3 top-3.5 text-slate-400" /><input type="date" value={pickupDate} onChange={(e) => setPickupDate(e.target.value)} className="w-full pl-9 pr-3 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-sky-500 focus:bg-white font-medium" /></div></div>
         <div><label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Pickup Time</label><div className="relative"><Clock className="w-4 h-4 absolute left-3 top-3.5 text-slate-400" /><input type="time" value={pickupTime} onChange={(e) => setPickupTime(e.target.value)} className="w-full pl-9 pr-3 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-sky-500 focus:bg-white font-medium" /></div></div>
-        {isTransfer && (
-          <div className="lg:col-span-4 flex flex-wrap items-center gap-3">
+        <div className="lg:col-span-4 flex flex-wrap items-center gap-3">
             <button type="button" onClick={() => setRoundTrip(!roundTrip)} className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold border ${roundTrip ? "bg-sky-50 border-sky-300 text-sky-700" : "bg-slate-50 border-slate-200 text-slate-600"}`}>
-              <Repeat2 className="w-4 h-4" /> Return Transfer
+              <Repeat2 className="w-4 h-4" /> {isTransfer ? "Return Transfer" : serviceType === "car_hire" ? "Return Vehicle" : "Parking Exit"}
             </button>
             {roundTrip && <>
+              <div className="text-xs font-semibold text-slate-500">{serviceType === "transfer" ? "Return trip" : serviceType === "car_hire" ? "Vehicle return" : "Parking exit"}</div>
               <div className="relative"><Calendar className="w-4 h-4 absolute left-3 top-2.5 text-slate-400" /><input type="date" value={returnDate} min={pickupDate || undefined} onChange={(e) => setReturnDate(e.target.value)} className="pl-9 pr-3 py-2 text-sm bg-white border border-slate-200 rounded-xl" /></div>
               <div className="relative"><Clock className="w-4 h-4 absolute left-3 top-2.5 text-slate-400" /><input type="time" value={returnTime} onChange={(e) => setReturnTime(e.target.value)} className="pl-9 pr-3 py-2 text-sm bg-white border border-slate-200 rounded-xl" /></div>
             </>}
           </div>
-        )}
       </div>
       <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-slate-100">
         <div className="flex items-center gap-2"><Users className="w-4 h-4 text-slate-500" /><span className="text-xs font-bold text-slate-700 uppercase">Passengers:</span><select value={passengers} onChange={(e) => setPassengers(Number(e.target.value))} className="bg-slate-50 border border-slate-200 text-sm font-semibold rounded-lg px-2.5 py-1.5">{[1,2,3,4,5,6,7,8].map((num) => <option key={num} value={num}>{num} {num === 1 ? "Passenger" : "Passengers"}</option>)}</select></div>
