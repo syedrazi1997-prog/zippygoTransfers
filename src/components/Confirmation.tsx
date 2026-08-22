@@ -74,16 +74,20 @@ export function Confirmation({
                 {searchParams.pickupDate}
                 {searchParams.returnDate && ` → ${searchParams.returnDate}`}
               </DetailRow>
-              {searchParams.serviceType === "transfer" && (
+              <DetailRow icon={Clock} label={searchParams.serviceType === "parking" ? "Entry Time" : "Pick-up Time"}>
+                {searchParams.pickupTime}
+              </DetailRow>
+              {searchParams.roundTrip && (
                 <>
-                  <DetailRow icon={Clock} label="Pick-up Time">{searchParams.pickupTime}</DetailRow>
-                  {searchParams.roundTrip && (
-                    <>
-                      <DetailRow icon={Calendar} label="Return Date">{searchParams.returnDate}</DetailRow>
-                      <DetailRow icon={Clock} label="Return Time">{searchParams.returnTime}</DetailRow>
-                      <DetailRow icon={Plane} label="Trip Type">Round Trip (Both Ways)</DetailRow>
-                    </>
-                  )}
+                  <DetailRow icon={Calendar} label={searchParams.serviceType === "transfer" ? "Return Date" : searchParams.serviceType === "car_hire" ? "Vehicle Return" : "Parking Exit"}>
+                    {searchParams.returnDate}
+                  </DetailRow>
+                  <DetailRow icon={Clock} label={searchParams.serviceType === "parking" ? "Exit Time" : "Return Time"}>
+                    {searchParams.returnTime}
+                  </DetailRow>
+                  <DetailRow icon={Plane} label="Booking Period">
+                    {searchParams.serviceType === "transfer" ? "Round Trip (Both Ways)" : searchParams.serviceType === "car_hire" ? "Return Vehicle" : "Parking Entry & Exit"}
+                  </DetailRow>
                 </>
               )}
             </div>
