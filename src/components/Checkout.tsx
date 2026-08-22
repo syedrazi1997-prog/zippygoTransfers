@@ -394,16 +394,31 @@ export function Checkout({
               </div>
 
               <div className="mt-5 space-y-2.5 text-sm">
+                {pricing.isPerPerson ? (
+                  <>
+                    <div className="flex justify-between text-slate-600">
+                      <span>Per-person price</span>
+                      <span>{formatPrice(perPersonPrice, currency)}</span>
+                    </div>
+                    <div className="flex justify-between text-slate-600">
+                      <span>Passengers</span>
+                      <span>× {pricing.passengerCount}</span>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="flex justify-between text-slate-600">
+                      <span>Daily rate</span>
+                      <span>{formatPrice(pricing.dailyRateUSD || 0, currency)}</span>
+                    </div>
+                    <div className="flex justify-between text-slate-600">
+                      <span>Duration</span>
+                      <span>{pricing.days} day{pricing.days === 1 ? "" : "s"}</span>
+                    </div>
+                  </>
+                )}
                 <div className="flex justify-between text-slate-600">
-                  <span>Per-person price</span>
-                  <span>{formatPrice(perPersonPrice, currency)}</span>
-                </div>
-                <div className="flex justify-between text-slate-600">
-                  <span>Passengers</span>
-                  <span>× {pricing.passengerCount}</span>
-                </div>
-                <div className="flex justify-between text-slate-600">
-                  <span>Transfer subtotal</span>
+                  <span>{searchParams.serviceType === "car_hire" ? "Car hire subtotal" : searchParams.serviceType === "parking" ? "Parking subtotal" : "Transfer subtotal"}</span>
                   <span>{formatPrice(basePrice, currency)}</span>
                 </div>
                 {extrasTotal > 0 && (
