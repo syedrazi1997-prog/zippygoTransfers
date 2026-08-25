@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /checkout
+Disallow: /confirmation
+Disallow: /manage-booking
+
+Sitemap: https://zippygotransfers.onrender.com/sitemap.xml
